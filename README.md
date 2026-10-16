@@ -13,6 +13,34 @@
 План работ — в [Issues](https://github.com/getoutof/chesslearn/issues) и на
 [доске проекта](https://github.com/users/getoutof/projects/2).
 
+## Разработка
+
+Требуется [Flutter](https://docs.flutter.dev/get-started/install) 3.47 (stable).
+
+```bash
+flutter pub get
+flutter run            # на подключённом устройстве / эмуляторе
+flutter analyze
+flutter test
+```
+
+Структура кода:
+
+```
+lib/
+  main.dart            точка входа
+  src/
+    app.dart           MaterialApp, темы, корневая навигация
+    core/              общие вещи: тема, утилиты, базовые виджеты
+    features/<name>/   экраны и логика по фичам (home, game, engine, ...)
+    data/              хранилище, базы партий, репозитории
+```
+
+Состояние — [Riverpod](https://riverpod.dev/).
+
+CI (GitHub Actions) на каждый push и PR: формат, анализатор, тесты, сборка Android APK
+(скачать в артефактах запуска — `chesslearn-apk`) и проверочная сборка iOS без подписи.
+
 ## Лицензия
 
 Исходный код распространяется под лицензией **GNU General Public License v3.0** — см. [LICENSE](LICENSE).
