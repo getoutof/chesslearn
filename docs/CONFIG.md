@@ -21,6 +21,8 @@
 | `.metadata` | Ревизия Flutter, из которой создан проект; нужна `flutter migrate` | Flutter | **нет** | нет |
 | `.gitignore` | Что не попадает в git | мы (основа от Flutter) | да | нет |
 | `.github/workflows/ci.yml` | CI: проверки, сборка Android (dev) и iOS (dev, prod) | мы | да | собирает оба |
+| `tool/remote.env.example` | Пример настроек подключения к билд-машине | мы | да | нет |
+| `tool/remote.env` | Ваши настройки подключения к билд-машине | мы, **не в git** | да | — |
 
 ## Android (`android/`)
 
