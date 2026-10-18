@@ -1,7 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Release signing key for the prod flavor. android/key.properties and the keystore
+// are never committed — see docs/CONFIG.md.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseKey = keystorePropertiesFile.exists()
+val keystoreProperties = Properties().apply {
+    if (hasReleaseKey) keystorePropertiesFile.inputStream().use { load(it) }
 }
 
 android {
@@ -14,11 +24,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    buildFeatures {
+        resValues = true
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Must not change after the app is published in Google Play.
         applicationId = "io.github.getoutof.chesslearn"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
@@ -29,12 +41,42 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+    }
+
+    flavorDimensions += "env"
+    productFlavors {
+        create("dev") {
+            dimension = "env"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "ChessLearn Dev")
+            // Dev builds, release included, use the debug key so they install on any device.
             signingConfig = signingConfigs.getByName("debug")
         }
+        create("prod") {
+            dimension = "env"
+            resValue("string", "app_name", "ChessLearn")
+            if (hasReleaseKey) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+}
+
+// Never produce a prod release signed with the debug key: fail instead.
+gradle.taskGraph.whenReady {
+    if (!hasReleaseKey && allTasks.any { it.name.contains("ProdRelease") }) {
+        throw GradleException(
+            "prod release build needs android/key.properties with the release key (see docs/CONFIG.md)",
+        )
     }
 }
 
