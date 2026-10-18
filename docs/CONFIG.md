@@ -20,6 +20,7 @@
 | `analysis_options.yaml` | Правила анализатора и линтера: `flutter_lints` + `strict-casts`, `strict-raw-types` и доп. правила | мы | да | нет |
 | `.metadata` | Ревизия Flutter, из которой создан проект; нужна `flutter migrate` | Flutter | **нет** | нет |
 | `.gitignore` | Что не попадает в git | мы (основа от Flutter) | да | нет |
+| `.github/workflows/ci.yml` | CI: проверки, сборка Android (dev) и iOS (dev, prod) | мы | да | собирает оба |
 
 ## Android (`android/`)
 

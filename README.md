@@ -42,6 +42,16 @@ lib/
 
 Состояние — [Riverpod](https://riverpod.dev/).
 
+### CI
+
+GitHub Actions на каждый push в `main` и каждый PR:
+
+- `dart format`, `flutter analyze`, `flutter test`;
+- сборка Android APK (dev) — скачать в артефактах запуска, `chesslearn-dev-apk`;
+- проверочная сборка iOS (dev и prod) без подписи.
+
+Версия Flutter берётся из `pubspec.yaml`.
+
 ## Лицензия
 
 Исходный код распространяется под лицензией **GNU General Public License v3.0** — см. [LICENSE](LICENSE).
