@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Run flutter commands on a remote build machine.
 #
-# Syncs the working tree (including uncommitted changes) over SSH, runs
-# `flutter <args>` there and copies build outputs back to build/remote/.
+# Syncs the working tree (including uncommitted changes) over SSH and runs
+# `flutter <args>` there. Build outputs stay on the remote machine.
 #
 #   tool/remote.sh build apk --release
 #   tool/remote.sh test
@@ -53,16 +53,9 @@ fi
 echo "==> $CMD"
 "${SSH[@]}" ". $REMOTE_ENV && cd $REMOTE_DIR && $CMD"
 
-# Fetch Android build outputs back.
+# Outputs stay on the remote; just show where they are.
 if [ "${1:-}" = "build" ] && { [ "${2:-}" = "apk" ] || [ "${2:-}" = "appbundle" ]; }; then
-  mkdir -p "$ROOT/build/remote"
-  # flutter-apk/ holds the APKs as Flutter names them; bundle/ holds AABs.
-  rsync -a -e "ssh -o BatchMode=yes -p $REMOTE_PORT" \
-    --include 'flutter-apk/' --include 'flutter-apk/*.apk' \
-    --include 'bundle/' --include 'bundle/*/' --include 'bundle/*/*.aab' \
-    --exclude '*' \
-    "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/build/app/outputs/" "$ROOT/build/remote/"
-  echo "==> outputs:"
-  find "$ROOT/build/remote" -type f \( -name '*.apk' -o -name '*.aab' \) -exec ls -lh {} + \
-    | awk '{print "  " $NF " (" $5 ")"}'
+  echo "==> outputs on $REMOTE_HOST:"
+  "${SSH[@]}" "cd $REMOTE_DIR && find \"\$PWD/build/app/outputs/flutter-apk\" \"\$PWD/build/app/outputs/bundle\" \
+    -type f \( -name '*.apk' -o -name '*.aab' \) -exec ls -lh {} + 2>/dev/null | awk '{print \"  \" \$NF \" (\" \$5 \")\"}'"
 fi
