@@ -38,6 +38,21 @@ lib/
 
 Состояние — [Riverpod](https://riverpod.dev/).
 
+### Сборка на удалённой машине
+
+`tool/remote.sh` синхронизирует рабочую копию (включая незакоммиченные изменения) на
+билд-машину по SSH, выполняет там `flutter <аргументы>` и скачивает APK/AAB в `build/remote/`.
+
+```bash
+cp tool/remote.env.example tool/remote.env   # хост, порт, пользователь
+tool/remote.sh build apk --release
+tool/remote.sh test
+tool/remote.sh --shell 'adb devices'
+```
+
+На удалённой машине должны быть Flutter, JDK 17 и Android SDK, а файл из `REMOTE_ENV`
+должен добавлять их в `PATH`.
+
 CI (GitHub Actions) на каждый push и PR: формат, анализатор, тесты, сборка Android APK
 (скачать в артефактах запуска — `chesslearn-apk`) и проверочная сборка iOS без подписи.
 
