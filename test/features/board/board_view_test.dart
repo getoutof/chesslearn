@@ -64,6 +64,28 @@ void main() {
     expect(moves, [const NormalMove(from: Square.g1, to: Square.f3)]);
   });
 
+  testWidgets('при превращении пешки доска предлагает выбрать фигуру', (
+    tester,
+  ) async {
+    final moves = <Move>[];
+    final position = Chess.fromSetup(
+      Setup.parseFen('4k3/P7/8/8/8/8/8/4K3 w - - 0 1'),
+    );
+    await tester.pumpWidget(
+      _wrap(BoardView(position: position, onMove: moves.add)),
+    );
+
+    await _tapSquare(tester, 'a7');
+    await _tapSquare(tester, 'a8');
+    expect(moves, isEmpty, reason: 'ход ждёт выбора фигуры');
+
+    // Выбор фигуры показан столбцом от a8 вниз: ферзь, конь, ладья, слон.
+    await _tapSquare(tester, 'a7');
+    expect(moves, [
+      const NormalMove(from: Square.a7, to: Square.a8, promotion: Role.knight),
+    ]);
+  });
+
   testWidgets('нелегальный ход не проходит', (tester) async {
     final moves = <Move>[];
     await tester.pumpWidget(
