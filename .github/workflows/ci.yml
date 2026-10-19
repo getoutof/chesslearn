@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Полная история нужна, чтобы сравнить PR с базовой веткой.
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test tool
+      - name: Comments in Russian
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: dart run tool/check_comments.dart ${BASE_REF:+--base origin/$BASE_REF}
+      - run: flutter analyze
+      - run: flutter test
+
+  android:
+    name: Build Android APK (dev)
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+      # Для prod-релиза нужен ключ подписи (#28), поэтому CI собирает только dev.
+      - run: flutter build apk --release --flavor dev
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chesslearn-dev-apk
+          path: build/app/outputs/flutter-apk/app-dev-release.apk
+          retention-days: 14
+
+  ios:
+    name: Build iOS (${{ matrix.flavor }}, no codesign)
+    needs: check
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter build ios --release --no-codesign --flavor ${{ matrix.flavor }}
