@@ -39,6 +39,26 @@
   один коммит с причиной в сообщении.
 - Не смешивайте в одном коммите форматирование и изменение логики.
 
+## Комментарии в коде
+
+Комментарии пишем **по-русски** — в Dart, Kotlin, Swift, YAML, shell, во всём коде, который
+пишем сами. Английские термины и идентификаторы внутри можно: «подпись для flavor prod»,
+`` `flutter pub get` ``. Сгенерированный код (`flutter create`, `*.g.dart`, `*.freezed.dart`
+и т.п.) не трогаем — там остаётся как есть.
+
+Проверяет `dart run tool/check_comments.dart` (в CI — на каждый PR):
+
+- `lib/`, `test/`, `tool/`, `.github/`, `analysis_options.yaml` — наши целиком, проверяются полностью;
+- `pubspec.yaml`, `android/app/build.gradle.kts`, `android/gradle.properties`, нативный код
+  в `android/app/src/main/kotlin/` и `ios/Runner/` — созданы из шаблона Flutter, в них
+  остаются его английские комментарии. Поэтому проверяются только строки, изменённые в PR
+  (`--base <ветка>`);
+- соседние строки комментария проверяются вместе, как один абзац; комментарий проходит, если
+  в нём есть русский текст. Директивы (`// ignore: …`, `# shellcheck …`) не проверяются.
+
+Новый наш каталог или файл из шаблона, который мы правим, — добавьте в `ownPaths` или
+`mixedPaths` в `tool/check_comments.dart`.
+
 ## Размер PR
 
 - Рукописных изменений — ориентир **до ~400 строк**. Больше — разбейте.
@@ -70,7 +90,8 @@
 
 ## Проверки перед ревью
 
-- `dart format lib test`, `flutter analyze` — без замечаний, `flutter test` — зелёный;
+- `dart format lib test tool`, `flutter analyze` — без замечаний, `flutter test` — зелёный;
+- `dart run tool/check_comments.dart --base origin/main` — комментарии на русском;
 - CI в PR зелёный;
 - изменения в `ios/` проверены сборкой на macOS (CI собирает iOS dev и prod);
 - изменения в `android/` проверены сборкой (локально или `tool/remote.sh`);

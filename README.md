@@ -47,6 +47,7 @@ lib/
 GitHub Actions на каждый push в `main` и каждый PR:
 
 - `dart format`, `flutter analyze`, `flutter test`;
+- комментарии в коде — на русском (`dart run tool/check_comments.dart`, подробнее — в [CONTRIBUTING.md](CONTRIBUTING.md));
 - сборка Android APK (dev) — скачать в артефактах запуска, `chesslearn-dev-apk`;
 - проверочная сборка iOS (dev и prod) без подписи.
 
