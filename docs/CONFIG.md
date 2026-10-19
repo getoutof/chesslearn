@@ -17,7 +17,7 @@
 |---|---|---|---|---|
 | `pubspec.yaml` | Имя, версия приложения (`version: X.Y.Z+N`), **версия Flutter** (`environment.flutter`), `default-flavor`, зависимости, ассеты | мы | да | нет |
 | `pubspec.lock` | Точные версии зависимостей | генерируется `flutter pub get`, **хранится в git** | только через `flutter pub` | нет |
-| `analysis_options.yaml` | Правила анализатора и линтера | мы | да | нет |
+| `analysis_options.yaml` | Правила анализатора и линтера: `flutter_lints` + `strict-casts`, `strict-raw-types` и доп. правила | мы | да | нет |
 | `.metadata` | Ревизия Flutter, из которой создан проект; нужна `flutter migrate` | Flutter | **нет** | нет |
 | `.gitignore` | Что не попадает в git | мы (основа от Flutter) | да | нет |
 

@@ -13,6 +13,35 @@
 План работ — в [Issues](https://github.com/getoutof/chesslearn/issues) и на
 [доске проекта](https://github.com/users/getoutof/projects/2).
 
+## Разработка
+
+Версия Flutter зафиксирована в `pubspec.yaml` (`environment.flutter`).
+
+```bash
+flutter pub get
+flutter run                   # flavor dev по умолчанию
+flutter run --flavor prod
+flutter analyze
+flutter test
+```
+
+Две сборки — **dev** («ChessLearn Dev», ставится рядом с боевой) и **prod** («ChessLearn»).
+Что за конфиги в проекте, что можно менять и чем отличаются dev и prod — в [docs/CONFIG.md](docs/CONFIG.md).
+
+Структура кода:
+
+```
+lib/
+  main.dart            точка входа
+  src/
+    app.dart           MaterialApp, темы, корневая навигация
+    core/              общие вещи: тема, утилиты, базовые виджеты
+    features/<name>/   экраны и логика по фичам (home, game, engine, ...)
+    data/              хранилище, базы партий, репозитории
+```
+
+Состояние — [Riverpod](https://riverpod.dev/).
+
 ## Лицензия
 
 Исходный код распространяется под лицензией **GNU General Public License v3.0** — см. [LICENSE](LICENSE).
