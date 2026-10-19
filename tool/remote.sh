@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Запускает команды flutter на удалённой билд-машине.
+#
+# Синхронизирует рабочую копию (включая незакоммиченные изменения) по SSH
+# и запускает там `flutter <аргументы>`. Результаты сборки остаются там же.
+#
+#   tool/remote.sh build apk --release
+#   tool/remote.sh test
+#   tool/remote.sh analyze
+#   tool/remote.sh --shell 'adb devices'   # любая команда в папке проекта
+#
+# Настройки подключения: tool/remote.env (пример — tool/remote.env.example).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ENV_FILE="$ROOT/tool/remote.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Missing $ENV_FILE — copy tool/remote.env.example and fill it in." >&2
+  exit 1
+fi
+# shellcheck source=remote.env.example
+. "$ENV_FILE"
+: "${REMOTE_HOST:?}" "${REMOTE_USER:?}"
+REMOTE_PORT="${REMOTE_PORT:-22}"
+REMOTE_DIR="${REMOTE_DIR:-chesslearn}"
+REMOTE_ENV="${REMOTE_ENV:-\$HOME/chessbuild.env}"
+
+if [ $# -eq 0 ]; then
+  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+  exit 1
+fi
+
+SSH=(ssh -o BatchMode=yes -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST")
+
+echo "==> sync to $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
+rsync -az --delete \
+  -e "ssh -o BatchMode=yes -p $REMOTE_PORT" \
+  --exclude .git/ \
+  --exclude build/ \
+  --exclude .dart_tool/ \
+  --exclude 'android/.gradle/' \
+  --exclude 'ios/Pods/' \
+  --exclude tool/remote.env \
+  "$ROOT/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/"
+
+if [ "$1" = "--shell" ]; then
+  shift
+  CMD="$*"
+else
+  CMD="flutter $(printf '%q ' "$@")"
+fi
+
+echo "==> $CMD"
+# По метке показываем только файлы, собранные этим запуском.
+"${SSH[@]}" ". $REMOTE_ENV && cd $REMOTE_DIR && mkdir -p build && touch build/.remote-run && $CMD"
+
+# Результаты остаются на билд-машине; показываем, где они лежат.
+if [ "${1:-}" = "build" ] && { [ "${2:-}" = "apk" ] || [ "${2:-}" = "appbundle" ]; }; then
+  echo "==> outputs on $REMOTE_HOST:"
+  "${SSH[@]}" "cd $REMOTE_DIR && find \"\$PWD/build/app/outputs/flutter-apk\" \"\$PWD/build/app/outputs/bundle\" \
+    -type f \( -name '*.apk' -o -name '*.aab' \) -newer build/.remote-run -exec ls -lh {} + 2>/dev/null | awk '{print \"  \" \$NF \" (\" \$5 \")\"}'"
+fi
