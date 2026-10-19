@@ -15,7 +15,7 @@
 
 | Файл | Зачем | Кто управляет | Менять? | dev/prod |
 |---|---|---|---|---|
-| `pubspec.yaml` | Имя, версия приложения (`version: X.Y.Z+N`), зависимости, ассеты | мы | да | нет |
+| `pubspec.yaml` | Имя, версия приложения (`version: X.Y.Z+N`), **версия Flutter** (`environment.flutter`), `default-flavor`, зависимости, ассеты | мы | да | нет |
 | `pubspec.lock` | Точные версии зависимостей | генерируется `flutter pub get`, **хранится в git** | только через `flutter pub` | нет |
 | `analysis_options.yaml` | Правила анализатора и линтера | мы | да | нет |
 | `.metadata` | Ревизия Flutter, из которой создан проект; нужна `flutter migrate` | Flutter | **нет** | нет |
@@ -25,12 +25,12 @@
 
 | Файл | Зачем | Кто управляет | Менять? | dev/prod |
 |---|---|---|---|---|
-| `app/build.gradle.kts` | **Главный файл Android:** `applicationId`, версии SDK, подпись, типы сборок | мы | да, внимательно | **да**: id, подпись |
+| `app/build.gradle.kts` | **Главный файл Android:** `applicationId`, версии SDK, **flavors dev/prod**, название, подпись | мы | да, внимательно | **да**: id, название, подпись |
 | `build.gradle.kts` | Репозитории, общая папка сборки `build/` | Flutter | редко | нет |
 | `settings.gradle.kts` | Версии Android Gradle Plugin и Kotlin, подключение Flutter SDK | Flutter | при обновлении Flutter | нет |
 | `gradle.properties` | Память для Gradle (`-Xmx8G`), AndroidX, флаги совместимости | мы | да | нет |
 | `gradle/wrapper/gradle-wrapper.properties` | Версия Gradle | Flutter | при обновлении Flutter | нет |
-| `app/src/main/AndroidManifest.xml` | Название приложения, разрешения, главная Activity | мы | да | **да**: название |
+| `app/src/main/AndroidManifest.xml` | Разрешения, главная Activity, ориентация; название — `@string/app_name` из flavor | мы | да | нет |
 | `app/src/debug/AndroidManifest.xml`, `profile/…` | Разрешение `INTERNET` для hot reload — **только** в debug/profile | Flutter | нет | нет |
 | `app/src/main/res/values*/styles.xml`, `drawable*/launch_background.xml` | Тема и фон при запуске | мы | да (сплэш) | нет |
 | `app/src/main/res/mipmap-*/ic_launcher.png` | Иконка | мы | да (иконка) | можно |
@@ -42,9 +42,9 @@
 
 | Файл | Зачем | Кто управляет | Менять? | dev/prod |
 |---|---|---|---|---|
-| `Runner.xcodeproj/project.pbxproj` | **Главный файл iOS:** bundle id, минимальная iOS, устройства, конфигурации сборки, подпись | мы (через Xcode) | да, внимательно | **да**: bundle id, подпись |
-| `Runner/Info.plist` | Название, ориентации экрана, разрешения | мы | да | **да**: название |
-| `Runner.xcodeproj/xcshareddata/xcschemes/*.xcscheme` | Схемы сборки (какая конфигурация для Run/Archive) | мы (через Xcode) | при добавлении flavors | да |
+| `Runner.xcodeproj/project.pbxproj` | **Главный файл iOS:** конфигурации `Debug/Release/Profile-{dev,prod}`, bundle id и `APP_DISPLAY_NAME` для каждой, минимальная iOS, устройства, подпись | мы (через Xcode) | да, внимательно | **да**: bundle id, название, подпись |
+| `Runner/Info.plist` | Ориентации экрана, разрешения; название — `$(APP_DISPLAY_NAME)` из конфигурации | мы | да | нет |
+| `Runner.xcodeproj/xcshareddata/xcschemes/*.xcscheme` | Схемы сборки: `dev`, `prod` (их использует `--flavor`), `Runner` (от шаблона) | мы (через Xcode) | при добавлении flavors | да |
 | `Flutter/Debug.xcconfig`, `Flutter/Release.xcconfig` | Подключают сгенерированный `Generated.xcconfig` | Flutter | нет | нет |
 | `Flutter/AppFrameworkInfo.plist` | Метаданные Flutter-фреймворка | Flutter | нет | нет |
 | `Runner.xcworkspace/*`, `*/xcshareddata/*.plist`, `*.xcsettings` | Служебные файлы Xcode | Flutter / Xcode | нет | нет |
@@ -54,12 +54,63 @@
 | `RunnerTests/RunnerTests.swift` | Нативные iOS-тесты | мы | при необходимости | нет |
 | `Flutter/Generated.xcconfig`, `Podfile.lock`, `Pods/` | Сгенерировано Flutter / CocoaPods | генерируется | — | — |
 
+## Flavors: dev и prod
+
+| | dev | prod |
+|---|---|---|
+| Назначение | Разработка, тестовые сборки | Сторы |
+| Android `applicationId` | `io.github.getoutof.chesslearn.dev` | `io.github.getoutof.chesslearn` |
+| iOS bundle id | `io.github.getoutof.chesslearn.dev` | `io.github.getoutof.chesslearn` |
+| Название | ChessLearn Dev | ChessLearn |
+| Подпись Android | debug-ключ (и для release) | release-ключ из `android/key.properties` |
+| Подпись iOS | автоматическая (Xcode) | автоматическая (Xcode), команда разработчика — #23 |
+
+Разные id — dev и prod ставятся на один телефон рядом.
+
+```bash
+flutter run                              # dev (default-flavor в pubspec.yaml)
+flutter build apk --release              # dev, подписан debug-ключом
+flutter build apk --release --flavor prod
+flutter build appbundle --flavor prod    # для Google Play
+flutter build ipa --flavor prod          # для App Store (нужен Mac)
+```
+
+Во время работы приложения flavor доступен как `appFlavor` (`package:flutter/services.dart`).
+
+**Где задаётся:**
+
+- Android — `productFlavors` в `android/app/build.gradle.kts`;
+- iOS — конфигурации `*-dev` / `*-prod` в `project.pbxproj` (`PRODUCT_BUNDLE_IDENTIFIER`, `APP_DISPLAY_NAME`) и схемы `dev.xcscheme` / `prod.xcscheme`;
+- конфигурации без суффикса (`Debug`/`Release`/`Profile`) и схема `Runner` остались от шаблона: используются только при сборке из Xcode без flavor.
+
+> Когда появятся плагины с нативным кодом (например, Stockfish), Flutter создаст `ios/Podfile`. В нём нужно сопоставить
+> конфигурации `Debug-*` → `:debug`, `Profile-*`/`Release-*` → `:release`.
+
+### Ключ подписи Android (prod)
+
+Сборка `prod` в release **падает**, если нет `android/key.properties`, — чтобы боевая сборка никогда не ушла с debug-ключом.
+
+`android/key.properties` (в `.gitignore`, в git не хранится):
+
+```properties
+storePassword=...
+keyPassword=...
+keyAlias=upload
+storeFile=/абсолютный/путь/к/upload-keystore.jks
+```
+
+Keystore и пароли хранятся вне репозитория, с резервной копией: потеря ключа — потеря возможности обновлять приложение
+(с Play App Signing upload-ключ можно сбросить через поддержку Google).
+
 ## Ключевые значения
 
 | Параметр | Значение | Где |
 |---|---|---|
-| Android `applicationId` / `namespace` | `io.github.getoutof.chesslearn` | `android/app/build.gradle.kts` |
-| iOS bundle id | `io.github.getoutof.chesslearn` | `project.pbxproj` → `PRODUCT_BUNDLE_IDENTIFIER` |
+| Android `applicationId` / `namespace` | `io.github.getoutof.chesslearn` (+ `.dev` для dev) | `android/app/build.gradle.kts` |
+| iOS bundle id | `io.github.getoutof.chesslearn` (+ `.dev` для dev) | `project.pbxproj` → `PRODUCT_BUNDLE_IDENTIFIER` |
+| Flutter | 3.47.7 | `pubspec.yaml` → `environment.flutter` |
+| Устройства iOS | только iPhone | `TARGETED_DEVICE_FAMILY = 1` |
+| Ориентация | только портрет | `AndroidManifest.xml` → `screenOrientation`, `Info.plist` → `UISupportedInterfaceOrientations` |
 | Версия | из `pubspec.yaml` (`version`) → `versionName`/`versionCode`, `CFBundleShortVersionString`/`CFBundleVersion` | |
 | Android minSdk / targetSdk / compileSdk | 24 / 36 / 36 (берутся из Flutter) | `flutter.minSdkVersion` и т.д. |
 | Android NDK | 28.2.13676358 (из Flutter) | `flutter.ndkVersion` |
@@ -71,14 +122,15 @@
 
 ## Результаты аудита заготовки
 
-Состояние сразу после `flutter create` (Flutter 3.47.7). Исправляется в следующем PR.
+Что было сразу после `flutter create` (Flutter 3.47.7) и что сделано.
 
-| # | Проблема | Риск |
-|---|---|---|
-| 1 | Release подписывается **debug-ключом** (`signingConfig = signingConfigs.getByName("debug")`) | Google Play не примет; обновление другим ключом не встанет |
-| 2 | Название: Android `chesslearn`, iOS `Chesslearn` | Некрасиво в лаунчере, разные имена на платформах |
-| 3 | Нет разделения dev/prod | Тестовую и боевую сборки нельзя поставить рядом |
-| 4 | Разрешены все ориентации | Шахматный интерфейс рассчитан на портрет |
-| 5 | iOS собирается для iPhone и iPad (`TARGETED_DEVICE_FAMILY = "1,2"`) | App Store потребует скриншоты и вёрстку под iPad |
-| 6 | Версия Flutter нигде не зафиксирована в проекте | Разные машины соберут разными версиями |
-| 7 | В release-манифесте нет `INTERNET` | Понадобится для онлайн-функций (#20, #17) |
+| # | Проблема | Риск | Статус |
+|---|---|---|---|
+| 1 | Release подписывается **debug-ключом** | Google Play не примет; обновление другим ключом не встанет | ✅ prod — только release-ключ, без него сборка падает. Сам ключ — #28 |
+| 2 | Название: Android `chesslearn`, iOS `Chesslearn` | Разные имена на платформах | ✅ ChessLearn / ChessLearn Dev |
+| 3 | Нет разделения dev/prod | Тестовую и боевую сборки нельзя поставить рядом | ✅ flavors dev/prod |
+| 4 | Разрешены все ориентации | Интерфейс рассчитан на портрет | ✅ только портрет |
+| 5 | iOS для iPhone и iPad | Скриншоты и вёрстка под iPad | ✅ только iPhone |
+| 6 | Версия Flutter не зафиксирована | Разные машины соберут разными версиями | ✅ `environment.flutter` в `pubspec.yaml` |
+| 7 | В release-манифесте нет `INTERNET` | Понадобится для онлайн-функций | ⏳ добавить вместе с первой онлайн-функцией (#20, #17) |
+| 8 | Gradle просит 8 ГБ памяти (`-Xmx8G`) | Не соберётся на слабой машине | ⏳ оставлено: билд-машина и CI справляются |
