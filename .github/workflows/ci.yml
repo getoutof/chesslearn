@@ -39,7 +39,7 @@ jobs:
         with:
           flutter-version-file: pubspec.yaml
           cache: true
-      # prod release needs the signing key (#28), so CI builds dev only.
+      # Для prod-релиза нужен ключ подписи (#28), поэтому CI собирает только dev.
       - run: flutter build apk --release --flavor dev
       - uses: actions/upload-artifact@v4
         with:
