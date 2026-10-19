@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Run flutter commands on a remote build machine.
+# Запускает команды flutter на удалённой билд-машине.
 #
-# Syncs the working tree (including uncommitted changes) over SSH and runs
-# `flutter <args>` there. Build outputs stay on the remote machine.
+# Синхронизирует рабочую копию (включая незакоммиченные изменения) по SSH
+# и запускает там `flutter <аргументы>`. Результаты сборки остаются там же.
 #
 #   tool/remote.sh build apk --release
 #   tool/remote.sh test
 #   tool/remote.sh analyze
-#   tool/remote.sh --shell 'adb devices'   # arbitrary command in the project dir
+#   tool/remote.sh --shell 'adb devices'   # любая команда в папке проекта
 #
-# Connection settings: tool/remote.env (see tool/remote.env.example).
+# Настройки подключения: tool/remote.env (пример — tool/remote.env.example).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -51,10 +51,10 @@ else
 fi
 
 echo "==> $CMD"
-# The marker lets us list only the outputs produced by this run.
+# По метке показываем только файлы, собранные этим запуском.
 "${SSH[@]}" ". $REMOTE_ENV && cd $REMOTE_DIR && mkdir -p build && touch build/.remote-run && $CMD"
 
-# Outputs stay on the remote; just show where they are.
+# Результаты остаются на билд-машине; показываем, где они лежат.
 if [ "${1:-}" = "build" ] && { [ "${2:-}" = "apk" ] || [ "${2:-}" = "appbundle" ]; }; then
   echo "==> outputs on $REMOTE_HOST:"
   "${SSH[@]}" "cd $REMOTE_DIR && find \"\$PWD/build/app/outputs/flutter-apk\" \"\$PWD/build/app/outputs/bundle\" \
