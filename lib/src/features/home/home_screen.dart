@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app.dart';
 
-/// Placeholder home screen. Real menu and navigation come in #4.
+/// Временный главный экран. Настоящее меню и навигация — в #4.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 

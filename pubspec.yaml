@@ -20,7 +20,7 @@ version: 0.1.0+1
 
 environment:
   sdk: ^3.13.5
-  # Exact Flutter version for every machine and CI (read by CI via flutter-version-file).
+  # Точная версия Flutter для всех машин и CI (CI читает её через flutter-version-file).
   flutter: 3.47.7
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -54,7 +54,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-  # Flavor used when --flavor is not given (flutter run/build/test). See docs/CONFIG.md.
+  # Flavor, если --flavor не указан (flutter run/build/test). См. docs/CONFIG.md.
   default-flavor: dev
 
   # The following line ensures that the Material Icons font is

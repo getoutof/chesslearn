@@ -6,8 +6,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Release signing key for the prod flavor. android/key.properties and the keystore
-// are never committed — see docs/CONFIG.md.
+// Ключ подписи релиза для flavor prod. android/key.properties и keystore
+// никогда не коммитятся — см. docs/CONFIG.md.
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseKey = keystorePropertiesFile.exists()
 val keystoreProperties = Properties().apply {
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        // Must not change after the app is published in Google Play.
+        // Нельзя менять после публикации приложения в Google Play.
         applicationId = "io.github.getoutof.chesslearn"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
@@ -58,7 +58,7 @@ android {
             dimension = "env"
             applicationIdSuffix = ".dev"
             resValue("string", "app_name", "ChessLearn Dev")
-            // Dev builds, release included, use the debug key so they install on any device.
+            // Сборки dev, включая release, подписываются debug-ключом, чтобы ставиться на любое устройство.
             signingConfig = signingConfigs.getByName("debug")
         }
         create("prod") {
@@ -71,7 +71,7 @@ android {
     }
 }
 
-// Never produce a prod release signed with the debug key: fail instead.
+// Prod-релиз с debug-ключом не собираем никогда: лучше упасть.
 gradle.taskGraph.whenReady {
     if (!hasReleaseKey && allTasks.any { it.name.contains("ProdRelease") }) {
         throw GradleException(
