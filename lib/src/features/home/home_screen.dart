@@ -1,35 +1,26 @@
-import 'package:dartchess/dartchess.dart';
+import 'package:chessground/chessground.dart';
+import 'package:dartchess/dartchess.dart' show kInitialFEN;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
 import '../board/board_view.dart';
+import '../game/game.dart';
+import '../game/game_controller.dart';
 
 /// Временный главный экран: свободная игра на доске, чтобы её можно было
-/// попробовать. Настоящее меню и навигация — в #4, модель партии — в #3.
-class HomeScreen extends StatefulWidget {
+/// попробовать. Настоящее меню и навигация — в #4.
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  Position _position = Chess.initial;
-  Move? _lastMove;
-
-  void _setPosition(Position position) => setState(() {
-    _position = position;
-    _lastMove = null;
-  });
-
-  Future<void> _loadFen() async {
+  Future<void> _loadFen(BuildContext context, WidgetRef ref) async {
     final fen = await showDialog<String>(
       context: context,
       builder: (context) => const _FenDialog(),
     );
-    if (fen == null || !mounted) return;
+    if (fen == null || !context.mounted) return;
     try {
-      _setPosition(Chess.fromSetup(Setup.parseFen(fen.trim())));
+      ref.read(gameProvider.notifier).start(Game.fromFen(fen.trim()));
     } on Exception {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Некорректный FEN')));
@@ -37,7 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final game = ref.watch(gameProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text(ChessLearnApp.title),
@@ -45,12 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             tooltip: 'Позиция из FEN',
             icon: const Icon(Icons.edit_note),
-            onPressed: _loadFen,
+            onPressed: () => _loadFen(context, ref),
           ),
           IconButton(
             tooltip: 'Начальная позиция',
             icon: const Icon(Icons.restart_alt),
-            onPressed: () => _setPosition(Chess.initial),
+            onPressed: () => ref.read(gameProvider.notifier).start(),
           ),
         ],
       ),
@@ -58,12 +50,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: AspectRatio(
           aspectRatio: 1,
           child: BoardView(
-            position: _position,
-            lastMove: _lastMove,
-            onMove: (move) => setState(() {
-              _position = _position.play(move);
-              _lastMove = move;
-            }),
+            position: game.position,
+            lastMove: game.lastMove,
+            playerSide: game.outcome == null
+                ? PlayerSide.both
+                : PlayerSide.none,
+            onMove: ref.read(gameProvider.notifier).play,
           ),
         ),
       ),
