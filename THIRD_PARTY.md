@@ -12,6 +12,7 @@
 | dartchess | Правила шахмат, FEN/PGN | GPL-3.0 | https://github.com/lichess-org/dartchess |
 | Stockfish | Шахматный движок | GPL-3.0 | https://github.com/official-stockfish/Stockfish |
 | multistockfish | Обёртка Stockfish для Flutter | GPL-3.0 | https://github.com/lichess-org/dart-multistockfish |
+| package_info_plus | Версия приложения на экране «О программе» | BSD-3-Clause | https://github.com/fluttercommunity/plus_plugins |
 
 ## Данные
 

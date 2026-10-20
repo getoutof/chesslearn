@@ -39,6 +39,7 @@ dependencies:
   flutter_riverpod: ^3.4.3
   chessground: ^10.3.0
   dartchess: ^0.14.0
+  package_info_plus: ^10.2.2
 
 dev_dependencies:
   flutter_test:
