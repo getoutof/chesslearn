@@ -3,15 +3,18 @@ import 'package:dartchess/dartchess.dart' show kInitialFEN;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app.dart';
 import '../board/board_view.dart';
 import '../game/game.dart';
 import '../game/game_controller.dart';
 
-/// Временный главный экран: свободная игра на доске, чтобы её можно было
-/// попробовать. Настоящее меню и навигация — в #4.
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+/// Игра вдвоём на одном телефоне: обе стороны ходят по очереди.
+///
+/// Партия живёт в [gameProvider], поэтому после возврата в меню её можно
+/// продолжить. Остальное для hot-seat — в #5.
+class HotseatScreen extends ConsumerWidget {
+  const HotseatScreen({super.key});
+
+  static const title = 'Игра вдвоём';
 
   Future<void> _loadFen(BuildContext context, WidgetRef ref) async {
     final fen = await showDialog<String>(
@@ -32,7 +35,7 @@ class HomeScreen extends ConsumerWidget {
     final game = ref.watch(gameProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(ChessLearnApp.title),
+        title: const Text(title),
         actions: [
           IconButton(
             tooltip: 'Позиция из FEN',

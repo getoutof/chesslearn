@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
-import 'features/home/home_screen.dart';
+import 'features/hotseat/hotseat_screen.dart';
 
 class ChessLearnApp extends StatelessWidget {
   const ChessLearnApp({super.key});
@@ -14,7 +14,7 @@ class ChessLearnApp extends StatelessWidget {
       title: title,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      home: const HomeScreen(),
+      home: const HotseatScreen(),
     );
   }
 }

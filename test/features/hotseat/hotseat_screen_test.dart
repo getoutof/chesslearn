@@ -1,6 +1,6 @@
 import 'package:chesslearn/src/features/game/game.dart';
 import 'package:chesslearn/src/features/game/game_controller.dart';
-import 'package:chesslearn/src/features/home/home_screen.dart';
+import 'package:chesslearn/src/features/hotseat/hotseat_screen.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ Future<ProviderContainer> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: HomeScreen()),
+      child: const MaterialApp(home: HotseatScreen()),
     ),
   );
   return container;
