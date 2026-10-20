@@ -52,7 +52,7 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.settings,
               title: 'Настройки',
               builder: (_) =>
-                  const PlaceholderScreen(title: 'Настройки', issue: 4),
+                  const PlaceholderScreen(title: 'Настройки', issue: 41),
             ),
             _MenuItem(
               icon: Icons.info_outline,
