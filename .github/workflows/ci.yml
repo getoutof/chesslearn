@@ -10,6 +10,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Имена jobs (name:) — обязательные проверки в защите main. При переименовании job'а
+# обновите список проверок в настройках ветки, иначе PR не смогут смёржиться.
 jobs:
   check:
     name: Analyze & test
