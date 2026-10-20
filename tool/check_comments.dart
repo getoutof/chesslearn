@@ -9,7 +9,15 @@
 import 'dart:io';
 
 /// Файлы и папки, которые целиком наши: проверяются полностью.
-const ownPaths = ['lib', 'test', 'tool', '.github', 'analysis_options.yaml'];
+const ownPaths = [
+  'lib',
+  'test',
+  'integration_test',
+  'test_driver',
+  'tool',
+  '.github',
+  'analysis_options.yaml',
+];
 
 /// Наши файлы, созданные из шаблона Flutter: в них остались английские
 /// комментарии шаблона, поэтому проверяются только строки, изменённые

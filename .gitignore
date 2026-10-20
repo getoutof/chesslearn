@@ -49,3 +49,6 @@ app.*.map.json
 
 # Local remote-build settings
 /tool/remote.env
+
+# Скриншоты интеграционных тестов (flutter drive)
+/screenshots/
