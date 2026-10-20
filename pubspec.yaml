@@ -39,6 +39,8 @@ dependencies:
   flutter_riverpod: ^3.4.3
   chessground: ^10.3.0
   dartchess: ^0.14.0
+  package_info_plus: ^10.2.2
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +65,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Полный текст GPL-3.0 внутри приложения: показывается в «О программе →
+  # Лицензии» (требование GPL — передавать текст лицензии вместе с программой).
+  assets:
+    - LICENSE
 
   # To add assets to your application, add an assets section, like this:
   # assets:

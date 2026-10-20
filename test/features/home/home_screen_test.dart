@@ -1,3 +1,4 @@
+import 'package:chesslearn/src/features/about/about_screen.dart';
 import 'package:chesslearn/src/features/home/home_screen.dart';
 import 'package:chesslearn/src/features/hotseat/hotseat_screen.dart';
 import 'package:chesslearn/src/features/placeholder/placeholder_screen.dart';
@@ -31,12 +32,19 @@ void main() {
     expect(find.byType(Chessboard), findsNothing);
   });
 
+  testWidgets('«О программе» открывает экран с лицензиями', (tester) async {
+    await _pump(tester);
+
+    await _open(tester, AboutScreen.title);
+
+    expect(find.byType(AboutScreen), findsOneWidget);
+  });
+
   for (final (item, issue) in [
     ('Игра с компьютером', 11),
     ('Обучение', 13),
     ('Знаменитые партии', 21),
     ('Настройки', 41),
-    ('О программе', 4),
   ]) {
     testWidgets('«$item» — заглушка со ссылкой на #$issue', (tester) async {
       await _pump(tester);
