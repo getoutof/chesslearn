@@ -1,104 +1,96 @@
-import 'package:chessground/chessground.dart';
-import 'package:dartchess/dartchess.dart' show kInitialFEN;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
-import '../board/board_view.dart';
-import '../game/game.dart';
-import '../game/game_controller.dart';
+import '../hotseat/hotseat_screen.dart';
+import '../placeholder/placeholder_screen.dart';
 
-/// Временный главный экран: свободная игра на доске, чтобы её можно было
-/// попробовать. Настоящее меню и навигация — в #4.
-class HomeScreen extends ConsumerWidget {
+/// Главное меню: режимы игры и служебные разделы.
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  Future<void> _loadFen(BuildContext context, WidgetRef ref) async {
-    final fen = await showDialog<String>(
-      context: context,
-      builder: (context) => const _FenDialog(),
-    );
-    if (fen == null || !context.mounted) return;
-    try {
-      ref.read(gameProvider.notifier).start(Game.fromFen(fen.trim()));
-    } on Exception {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Некорректный FEN')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final game = ref.watch(gameProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(ChessLearnApp.title),
-        actions: [
-          IconButton(
-            tooltip: 'Позиция из FEN',
-            icon: const Icon(Icons.edit_note),
-            onPressed: () => _loadFen(context, ref),
-          ),
-          IconButton(
-            tooltip: 'Начальная позиция',
-            icon: const Icon(Icons.restart_alt),
-            onPressed: () => ref.read(gameProvider.notifier).start(),
-          ),
-        ],
-      ),
-      body: Center(
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: BoardView(
-            position: game.position,
-            lastMove: game.lastMove,
-            playerSide: game.outcome == null
-                ? PlayerSide.both
-                : PlayerSide.none,
-            onMove: ref.read(gameProvider.notifier).play,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FenDialog extends StatefulWidget {
-  const _FenDialog();
-
-  @override
-  State<_FenDialog> createState() => _FenDialogState();
-}
-
-class _FenDialogState extends State<_FenDialog> {
-  final _text = TextEditingController();
-
-  @override
-  void dispose() {
-    _text.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Позиция из FEN'),
-      content: TextField(
-        controller: _text,
-        autofocus: true,
-        decoration: const InputDecoration(hintText: kInitialFEN),
-        onSubmitted: (value) => Navigator.pop(context, value),
+    return Scaffold(
+      appBar: AppBar(title: const Text(ChessLearnApp.title)),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          children: [
+            _MenuItem(
+              icon: Icons.computer,
+              title: 'Игра с компьютером',
+              subtitle: 'Уровни сложности от новичка до мастера',
+              builder: (_) => const PlaceholderScreen(
+                title: 'Игра с компьютером',
+                issue: 11,
+              ),
+            ),
+            _MenuItem(
+              icon: Icons.people,
+              title: HotseatScreen.title,
+              subtitle: 'По очереди на одном телефоне',
+              builder: (_) => const HotseatScreen(),
+            ),
+            _MenuItem(
+              icon: Icons.school,
+              title: 'Обучение',
+              subtitle: 'Подсказки лучших ходов и разбор ошибок',
+              builder: (_) =>
+                  const PlaceholderScreen(title: 'Обучение', issue: 13),
+            ),
+            _MenuItem(
+              icon: Icons.history_edu,
+              title: 'Знаменитые партии',
+              subtitle: 'Партии чемпионов с комментариями',
+              builder: (_) => const PlaceholderScreen(
+                title: 'Знаменитые партии',
+                issue: 21,
+              ),
+            ),
+            const Divider(),
+            _MenuItem(
+              icon: Icons.settings,
+              title: 'Настройки',
+              builder: (_) =>
+                  const PlaceholderScreen(title: 'Настройки', issue: 41),
+            ),
+            _MenuItem(
+              icon: Icons.info_outline,
+              title: 'О программе',
+              builder: (_) =>
+                  const PlaceholderScreen(title: 'О программе', issue: 4),
+            ),
+          ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, _text.text),
-          child: const Text('Показать'),
-        ),
-      ],
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  const _MenuItem({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.builder,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+
+  /// Экран, который открывается по нажатию.
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: subtitle == null ? null : Text(subtitle!),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () =>
+          Navigator.of(context).push(MaterialPageRoute<void>(builder: builder)),
     );
   }
 }
