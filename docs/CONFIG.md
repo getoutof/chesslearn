@@ -20,7 +20,7 @@
 | `analysis_options.yaml` | Правила анализатора и линтера: `flutter_lints` + `strict-casts`, `strict-raw-types` и доп. правила | мы | да | нет |
 | `.metadata` | Ревизия Flutter, из которой создан проект; нужна `flutter migrate` | Flutter | **нет** | нет |
 | `.gitignore` | Что не попадает в git | мы (основа от Flutter) | да | нет |
-| `.github/workflows/ci.yml` | CI: проверки (формат, анализ, тесты, язык комментариев), сборка Android (dev) и iOS (dev, prod). Имена jobs — обязательные проверки для `main`: переименовали job — обновите защиту ветки | мы | да | собирает оба |
+| `.github/workflows/ci.yml` | CI: проверки (формат, анализ, тесты, язык комментариев), сборка Android (dev) и iOS (dev, prod), интеграционные тесты на Android-эмуляторе и iOS-симуляторе (скриншоты — в артефактах). Имена jobs — обязательные проверки для `main`: переименовали job — обновите защиту ветки (интеграционные тесты пока не обязательны) | мы | да | собирает оба |
 | `integration_test/` | Интеграционные тесты: запускаются на эмуляторе или устройстве, а не на хосте, как `test/` | мы | да | dev |
 | `test_driver/integration_test.dart` | Драйвер для `flutter drive`: запускает `integration_test/` и сохраняет скриншоты в `screenshots/` (не в git) | мы | редко | нет |
 | `tool/check_comments.dart` | Проверка, что комментарии в нашем коде на русском; списки проверяемых путей (`ownPaths`, `mixedPaths`) — в нём | мы | да | нет |
@@ -39,7 +39,10 @@ flutter drive -d <id> \
   --target=integration_test/app_test.dart   # flavor dev; скриншоты — в screenshots/
 ```
 
-Нужен запущенный эмулятор (Android — только при включённой виртуализации, `/dev/kvm`), iOS-симулятор
+В CI это делают jobs `Integration test (Android emulator)` и `Integration test (iOS simulator)`; скриншоты
+лежат в артефактах `screenshots-android` и `screenshots-ios` запуска CI.
+
+Локально нужен запущенный эмулятор (Android — только при включённой виртуализации, `/dev/kvm`), iOS-симулятор
 (только macOS) или подключённый телефон. `flutter test integration_test` тоже работает, но без скриншотов:
 `takeScreenshot` требует драйвера.
 
