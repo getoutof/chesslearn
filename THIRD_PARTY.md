@@ -13,6 +13,7 @@
 | Stockfish | Шахматный движок | GPL-3.0 | https://github.com/official-stockfish/Stockfish |
 | multistockfish | Обёртка Stockfish для Flutter | GPL-3.0 | https://github.com/lichess-org/dart-multistockfish |
 | package_info_plus | Версия приложения на экране «О программе» | BSD-3-Clause | https://github.com/fluttercommunity/plus_plugins |
+| url_launcher | Открытие ссылок (исходный код, текст лицензии) в браузере | BSD-3-Clause | https://github.com/flutter/packages |
 
 ## Данные
 

@@ -40,6 +40,7 @@ dependencies:
   chessground: ^10.3.0
   dartchess: ^0.14.0
   package_info_plus: ^10.2.2
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
