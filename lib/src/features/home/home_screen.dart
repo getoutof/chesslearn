@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app.dart';
+import '../about/about_screen.dart';
 import '../hotseat/hotseat_screen.dart';
 import '../placeholder/placeholder_screen.dart';
 
@@ -56,9 +57,8 @@ class HomeScreen extends StatelessWidget {
             ),
             _MenuItem(
               icon: Icons.info_outline,
-              title: 'О программе',
-              builder: (_) =>
-                  const PlaceholderScreen(title: 'О программе', issue: 4),
+              title: AboutScreen.title,
+              builder: (_) => const AboutScreen(),
             ),
           ],
         ),
