@@ -17,10 +17,11 @@
 |---|---|---|---|---|
 | `pubspec.yaml` | Имя, версия приложения (`version: X.Y.Z+N`), **версия Flutter** (`environment.flutter`), `default-flavor`, зависимости, ассеты (в том числе `LICENSE` — текст GPL для экрана «О программе») | мы | да | нет |
 | `pubspec.lock` | Точные версии зависимостей | генерируется `flutter pub get`, **хранится в git** | только через `flutter pub` | нет |
+| `lib/**/*.g.dart` | Код drift (таблицы, запросы), сгенерированный из наших исходников | генерируется `dart run build_runner build`, **хранится в git**: приложение собирается без запуска генератора | только перегенерацией; CI проверяет, что он актуален | нет |
 | `analysis_options.yaml` | Правила анализатора и линтера: `flutter_lints` + `strict-casts`, `strict-raw-types` и доп. правила | мы | да | нет |
 | `.metadata` | Ревизия Flutter, из которой создан проект; нужна `flutter migrate` | Flutter | **нет** | нет |
 | `.gitignore` | Что не попадает в git | мы (основа от Flutter) | да | нет |
-| `.github/workflows/ci.yml` | CI: проверки (формат, анализ, тесты, язык комментариев), сборка Android (dev) и iOS (dev, prod). Имена jobs — обязательные проверки для `main`: переименовали job — обновите защиту ветки | мы | да | собирает оба |
+| `.github/workflows/ci.yml` | CI: проверки (актуальность сгенерированного кода, формат, анализ, тесты, язык комментариев), сборка Android (dev) и iOS (dev, prod). Имена jobs — обязательные проверки для `main`: переименовали job — обновите защиту ветки | мы | да | собирает оба |
 | `tool/check_comments.dart` | Проверка, что комментарии в нашем коде на русском; списки проверяемых путей (`ownPaths`, `mixedPaths`) — в нём | мы | да | нет |
 | `tool/remote.env.example` | Пример настроек подключения к билд-машине | мы | да | нет |
 | `tool/remote.env` | Ваши настройки подключения к билд-машине | мы, **не в git** | да | — |
@@ -86,6 +87,12 @@ flutter build ipa --flavor prod          # для App Store (нужен Mac)
 - Android — `productFlavors` в `android/app/build.gradle.kts`;
 - iOS — конфигурации `*-dev` / `*-prod` в `project.pbxproj` (`PRODUCT_BUNDLE_IDENTIFIER`, `APP_DISPLAY_NAME`) и схемы `dev.xcscheme` / `prod.xcscheme`;
 - конфигурации без суффикса (`Debug`/`Release`/`Profile`) и схема `Runner` остались от шаблона: используются только при сборке из Xcode без flavor.
+
+**SQLite** (база партий, drift) в приложение встраивает пакет `sqlite3` через
+[hooks](https://dart.dev/tools/hooks): при сборке он скачивает готовую библиотеку SQLite из
+[релизов sqlite3.dart](https://github.com/simolus3/sqlite3.dart/releases) и сверяет её sha256 с
+суммами, зашитыми в пакет. Настроек в проекте для этого нет (используются значения по умолчанию;
+их можно задать в `pubspec.yaml` → `hooks.user_defines.sqlite3`). Сборке нужен доступ к GitHub.
 
 > Когда появятся плагины с нативным кодом (например, Stockfish), Flutter создаст `ios/Podfile`. В нём нужно сопоставить
 > конфигурации `Debug-*` → `:debug`, `Profile-*`/`Release-*` → `:release`.
