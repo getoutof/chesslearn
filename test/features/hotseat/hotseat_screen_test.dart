@@ -8,10 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/test_container.dart';
+
 /// Открывает экран игры поверх экрана «Меню», как из главного меню.
 Future<ProviderContainer> _pump(WidgetTester tester) async {
-  final container = ProviderContainer();
-  addTearDown(container.dispose);
+  final container = createTestContainer();
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
