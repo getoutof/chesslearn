@@ -138,18 +138,107 @@ void main() {
     });
 
     testWidgets('ничья повторением — окно с причиной', (tester) async {
-      final container = await _pump(tester);
-      final controller = container.read(gameProvider.notifier);
-      for (final uci in [
-        ...['g1f3', 'g8f6', 'f3g1', 'f6g8'],
-        ...['g1f3', 'g8f6', 'f3g1', 'f6g8'],
-      ]) {
-        controller.play(Move.parse(uci)!);
+      await _pump(tester);
+      for (var i = 0; i < 2; i++) {
+        await _playUci(tester, 'g1', 'f3');
+        await _playUci(tester, 'g8', 'f6');
+        await _playUci(tester, 'f3', 'g1');
+        await _playUci(tester, 'f6', 'g8');
       }
-      await tester.pumpAndSettle();
 
       expect(find.text('Ничья'), findsOneWidget);
       expect(find.text('Троекратное повторение позиции'), findsOneWidget);
+    });
+  });
+
+  group('история ходов', () {
+    IconButton button(WidgetTester tester, String tooltip) =>
+        tester.widget<IconButton>(
+          find.ancestor(
+            of: find.byTooltip(tooltip),
+            matching: find.byType(IconButton),
+          ),
+        );
+
+    testWidgets('в начале партии кнопки неактивны', (tester) async {
+      await _pump(tester);
+      expect(find.text('Ходов пока нет'), findsOneWidget);
+      for (final t in [
+        'В начало',
+        'Отменить ход',
+        'Вернуть ход',
+        'К последнему ходу',
+      ]) {
+        expect(button(tester, t).onPressed, isNull);
+      }
+    });
+
+    testWidgets('отмена и возврат хода', (tester) async {
+      final container = await _pump(tester);
+      await _playUci(tester, 'e2', 'e4');
+      await _playUci(tester, 'e7', 'e5');
+      expect(find.text('1.'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Отменить ход'));
+      await tester.pumpAndSettle();
+      expect(container.read(gameProvider).ply, 1);
+      expect(_board(tester).controller.lastMove, Move.parse('e2e4'));
+      expect(find.text('Ход чёрных'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Вернуть ход'));
+      await tester.pumpAndSettle();
+      expect(container.read(gameProvider).ply, 2);
+
+      await tester.tap(find.byTooltip('В начало'));
+      await tester.pumpAndSettle();
+      expect(container.read(gameProvider).fen, kInitialFEN);
+
+      await tester.tap(find.byTooltip('К последнему ходу'));
+      await tester.pumpAndSettle();
+      expect(container.read(gameProvider).ply, 2);
+    });
+
+    testWidgets('нажатие на ход в списке — переход к нему', (tester) async {
+      final container = await _pump(tester);
+      await _playUci(tester, 'e2', 'e4');
+      await _playUci(tester, 'e7', 'e5');
+
+      await tester.tap(find.text('e4'));
+      await tester.pumpAndSettle();
+      expect(container.read(gameProvider).ply, 1);
+    });
+
+    testWidgets('номера ходов — от стартовой позиции', (tester) async {
+      final container = await _pump(tester);
+      container
+          .read(gameProvider.notifier)
+          .start(Game.fromFen('4k3/8/8/8/8/8/8/4K2R b K - 0 12'));
+      await tester.pumpAndSettle();
+      await _playUci(tester, 'e8', 'd7');
+      await _playUci(tester, 'e1', 'g1');
+
+      expect(find.text('12…'), findsOneWidget);
+      expect(find.text('13.'), findsOneWidget);
+      expect(find.text('O-O'), findsOneWidget);
+    });
+
+    testWidgets('отмена мата: доска снова принимает ходы, окно не '
+        'появляется при возврате', (tester) async {
+      final container = await _pump(tester);
+      container.read(gameProvider.notifier).start(Game.fromFen(_beforeMate));
+      await tester.pumpAndSettle();
+      await _playUci(tester, 'd8', 'h4');
+      await tester.tap(find.text('К позиции'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Отменить ход'));
+      await tester.pumpAndSettle();
+      expect(_board(tester).controller.interactive, isTrue);
+
+      await tester.tap(find.byTooltip('Вернуть ход'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Победили чёрные. Мат'), findsOneWidget);
     });
   });
 

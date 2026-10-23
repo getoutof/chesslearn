@@ -1,5 +1,5 @@
 import 'package:chessground/chessground.dart';
-import 'package:dartchess/dartchess.dart' show Side, kInitialFEN;
+import 'package:dartchess/dartchess.dart' show Move, Side, kInitialFEN;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,12 +7,14 @@ import '../board/board_view.dart';
 import '../game/game.dart';
 import '../game/game_controller.dart';
 import '../game/game_result_text.dart';
+import '../game/move_history.dart';
 
 /// Игра вдвоём на одном телефоне: обе стороны ходят по очереди.
 ///
-/// Над доской — чей ход или итог партии. Когда партия заканчивается,
-/// показывается окно результата. Партия живёт в [gameProvider], поэтому
-/// после возврата в меню её можно продолжить.
+/// Над доской — чей ход или итог партии, под доской — ходы и кнопки
+/// отмены. Когда ход на доске заканчивает партию, показывается окно
+/// результата. Партия живёт в [gameProvider], поэтому после возврата в меню
+/// её можно продолжить.
 class HotseatScreen extends ConsumerWidget {
   const HotseatScreen({super.key});
 
@@ -32,11 +34,13 @@ class HotseatScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _showResult(
-    BuildContext context,
-    WidgetRef ref,
-    GameResult result,
-  ) async {
+  /// Делает ход и, если он закончил партию, показывает окно результата.
+  /// Окно — только после хода: при переходах по истории к концу партии
+  /// итог виден над доской.
+  Future<void> _play(BuildContext context, WidgetRef ref, Move move) async {
+    final controller = ref.read(gameProvider.notifier)..play(move);
+    final result = ref.read(gameProvider).result;
+    if (result == null) return;
     final action = await showDialog<_ResultAction>(
       context: context,
       builder: (context) => _ResultDialog(result),
@@ -44,7 +48,7 @@ class HotseatScreen extends ConsumerWidget {
     if (!context.mounted) return;
     switch (action) {
       case _ResultAction.newGame:
-        ref.read(gameProvider.notifier).start();
+        controller.start();
       case _ResultAction.menu:
         Navigator.of(context).popUntil((route) => route.isFirst);
       case null:
@@ -54,10 +58,8 @@ class HotseatScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(gameProvider.select((game) => game.result), (previous, next) {
-      if (previous == null && next != null) _showResult(context, ref, next);
-    });
     final game = ref.watch(gameProvider);
+    final controller = ref.read(gameProvider.notifier);
     return Scaffold(
       appBar: AppBar(
         title: const Text(title),
@@ -92,10 +94,13 @@ class HotseatScreen extends ConsumerWidget {
                   playerSide: game.outcome == null
                       ? PlayerSide.both
                       : PlayerSide.none,
-                  onMove: ref.read(gameProvider.notifier).play,
+                  onMove: (move) => _play(context, ref, move),
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            MoveList(game: game, onGoTo: controller.goTo),
+            HistoryButtons(game: game, onGoTo: controller.goTo),
           ],
         ),
       ),
