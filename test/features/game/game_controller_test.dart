@@ -117,4 +117,57 @@ void main() {
       expect(container.read(gameProvider).fen, kInitialFEN);
     });
   });
+
+  group('сохранённые партии', () {
+    test('импорт PGN — новая сохранённая партия с заголовками', () async {
+      await controller().importPgn('[White "Morphy"]\n\n1. e4 e5 *');
+      expect(container.read(gameProvider).moves, hasLength(2));
+
+      controller().play(Move.parse('g1f3')!);
+      final pgn = await controller().pgn();
+      expect(pgn, contains('[White "Morphy"]'));
+      expect(pgn, contains('1. e4 e5 2. Nf3 *'));
+    });
+
+    test('PGN несохранённой партии', () async {
+      expect(await controller().pgn(), contains('[Result "*"]'));
+    });
+
+    test('удаление текущей партии начинает новую', () async {
+      controller().play(Move.parse('e2e4')!);
+      await controller().saved;
+      final id =
+          (await container.read(savedGamesRepositoryProvider).watchAll().first)
+              .single
+              .id;
+
+      await controller().deleteSaved(id);
+      expect(container.read(gameProvider).moves, isEmpty);
+
+      controller().play(Move.parse('d2d4')!);
+      await controller().saved;
+      final rows = await container
+          .read(savedGamesRepositoryProvider)
+          .watchAll()
+          .first;
+      expect(rows.single.pgn, contains('1. d4'));
+    });
+
+    test('openSaved открывает партию на сохранённом ходу', () async {
+      controller()
+        ..play(Move.parse('e2e4')!)
+        ..play(Move.parse('e7e5')!)
+        ..undo();
+      await controller().saved;
+      final id =
+          (await container.read(savedGamesRepositoryProvider).watchAll().first)
+              .single
+              .id;
+      controller().start();
+
+      await controller().openSaved(id);
+      expect(container.read(gameProvider).ply, 1);
+      expect(container.read(gameProvider).moves, hasLength(2));
+    });
+  });
 }

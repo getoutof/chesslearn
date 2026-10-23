@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../saved_games/saved_games_repository.dart';
 import 'game.dart';
+import 'game_pgn.dart';
 
 /// Текущая партия.
 final gameProvider = NotifierProvider<GameController, Game>(GameController.new);
@@ -38,6 +39,38 @@ class GameController extends Notifier<Game> {
   void open(int id, Game game) {
     _slot = _SaveSlot(id);
     state = game;
+  }
+
+  /// Открывает сохранённую партию [id] из базы.
+  Future<void> openSaved(int id) async {
+    open(id, await ref.read(savedGamesRepositoryProvider).load(id));
+  }
+
+  /// Сохраняет партию из PGN как новую и открывает её. Бросает
+  /// [FormatException], если PGN не читается.
+  Future<void> importPgn(String pgn) async {
+    final (:game, :headers) = gameFromPgn(pgn);
+    final id = await ref
+        .read(savedGamesRepositoryProvider)
+        .create(game, headers: headers);
+    open(id, game);
+  }
+
+  /// Удаляет сохранённую партию [id]. Если это текущая партия — начинается
+  /// новая, чтобы автосохранение не писало в удалённую запись.
+  Future<void> deleteSaved(int id) async {
+    await _saving;
+    await ref.read(savedGamesRepositoryProvider).delete(id);
+    if (_slot.id == id) start();
+  }
+
+  /// PGN текущей партии; у сохранённой — с её заголовками.
+  Future<String> pgn() async {
+    await _saving;
+    if (_slot.id case final id?) {
+      return ref.read(savedGamesRepositoryProvider).pgn(id);
+    }
+    return gameToPgn(state);
   }
 
   /// Продолжает последнюю незаконченную партию, если она есть. Ошибка
