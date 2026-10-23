@@ -202,6 +202,64 @@ void main() {
     });
   });
 
+  group('история ходов', () {
+    final game = _play(const Game(), ['e2e4', 'e7e5', 'g1f3']);
+
+    test('новая партия — отменять и возвращать нечего', () {
+      expect(const Game().canUndo, isFalse);
+      expect(const Game().canRedo, isFalse);
+      expect(game.ply, 3);
+      expect(game.canUndo, isTrue);
+      expect(game.canRedo, isFalse);
+    });
+
+    test('undo возвращает позицию и последний ход, ходы сохраняются', () {
+      final back = game.undo();
+      expect(back.ply, 2);
+      expect(back.turn, Side.white);
+      expect(back.lastMove, Move.parse('e7e5'));
+      expect(back.moves, hasLength(3));
+      expect(back.canRedo, isTrue);
+    });
+
+    test('redo возвращает отменённый ход', () {
+      final again = game.undo().undo().redo();
+      expect(again.ply, 2);
+      expect(again.fen, game.undo().fen);
+    });
+
+    test('goTo — к любому ходу, 0 — стартовая позиция', () {
+      expect(game.goTo(0).fen, kInitialFEN);
+      expect(game.goTo(0).lastMove, isNull);
+      expect(game.goTo(1).lastMove, Move.parse('e2e4'));
+      expect(() => game.goTo(4), throwsRangeError);
+      expect(() => game.goTo(-1), throwsRangeError);
+      expect(const Game().undo, throwsRangeError);
+    });
+
+    test('ход из прошлой позиции отбрасывает отменённые', () {
+      final other = game.undo().play(Move.parse('b1c3')!);
+      expect([for (final m in other.moves) m.san], ['e4', 'e5', 'Nc3']);
+      expect(other.ply, 3);
+      expect(other.canRedo, isFalse);
+    });
+
+    test('после отмены мата партия продолжается', () {
+      final mate = _play(const Game(), ['f2f3', 'e7e5', 'g2g4', 'd8h4']);
+      expect(mate.result, isNotNull);
+      expect(mate.undo().result, isNull);
+      expect(mate.undo().redo().result, mate.result);
+    });
+
+    test('повторения считаются только до текущего хода', () {
+      const shuffle = ['g1f3', 'g8f6', 'f3g1', 'f6g8'];
+      final thrice = _play(const Game(), [...shuffle, ...shuffle]);
+      expect(thrice.result?.end, GameEnd.threefoldRepetition);
+      // Стартовая позиция на ходу 4 встретилась только второй раз.
+      expect(thrice.goTo(4).result, isNull);
+    });
+  });
+
   test('некорректный FEN', () {
     expect(() => Game.fromFen('not a fen'), throwsA(isA<FenException>()));
     expect(

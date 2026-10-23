@@ -12,6 +12,10 @@ class GameController extends Notifier<Game> {
 
   void play(Move move) => state = state.play(move);
 
+  void undo() => state = state.undo();
+  void redo() => state = state.redo();
+  void goTo(int ply) => state = state.goTo(ply);
+
   /// Начинает новую партию: с начальной позиции или с [game].
   void start([Game? game]) => state = game ?? const Game();
 }

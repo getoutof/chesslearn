@@ -43,29 +43,50 @@ class GameResult {
   String toString() => 'GameResult($outcome, ${end.name})';
 }
 
-/// Партия: стартовая позиция и сделанные ходы. Неизменяема — [play]
-/// возвращает новую партию.
+/// Партия: стартовая позиция, сделанные ходы и текущий ход [ply], на
+/// котором стоит доска. Неизменяема — [play], [undo], [redo] и [goTo]
+/// возвращают новую партию.
+///
+/// [undo] и [redo] только передвигают [ply], ходы при этом сохраняются.
+/// Ход из прошлой позиции отбрасывает всё, что было после неё.
 ///
 /// Все правила — из dartchess: легальность ходов, рокировка, взятие на
 /// проходе, превращение пешки, шах, мат и пат.
 @immutable
 class Game {
-  const Game({Position? start}) : this._(start ?? Chess.initial, const []);
+  const Game({Position? start}) : this._(start ?? Chess.initial, const [], 0);
 
   /// Партия с позиции из FEN. Бросает [FenException] или
   /// [PositionSetupException], если FEN некорректен.
   factory Game.fromFen(String fen) =>
       Game(start: Chess.fromSetup(Setup.parseFen(fen)));
 
-  const Game._(this.start, this.moves);
+  const Game._(this.start, this.moves, this.ply);
 
   final Position start;
+
+  /// Все ходы партии, в том числе отменённые, которые можно вернуть [redo].
   final List<GameMove> moves;
 
-  Position get position => moves.isEmpty ? start : moves.last.position;
+  /// Сколько ходов из [moves] сделано на доске: 0 — стартовая позиция.
+  final int ply;
+
+  Position get position => ply == 0 ? start : moves[ply - 1].position;
   String get fen => position.fen;
   Side get turn => position.turn;
-  Move? get lastMove => moves.isEmpty ? null : moves.last.move;
+  Move? get lastMove => ply == 0 ? null : moves[ply - 1].move;
+
+  bool get canUndo => ply > 0;
+  bool get canRedo => ply < moves.length;
+
+  /// Переходит к позиции после хода [ply]: 0 — стартовая позиция.
+  Game goTo(int ply) {
+    RangeError.checkValueInInterval(ply, 0, moves.length, 'ply');
+    return Game._(start, moves, ply);
+  }
+
+  Game undo() => goTo(ply - 1);
+  Game redo() => goTo(ply + 1);
 
   bool get isCheck => position.isCheck;
   bool get isCheckmate => position.isCheckmate;
@@ -101,7 +122,8 @@ class Game {
 
   Outcome? get outcome => result?.outcome;
 
-  /// Сколько раз в партии встретилась текущая позиция, включая её саму.
+  /// Сколько раз до текущего хода встретилась текущая позиция, включая её
+  /// саму.
   ///
   /// Позиции совпадают, если совпадают расстановка, очередь хода, права на
   /// рокировку и возможность взятия на проходе — это первые четыре поля
@@ -110,7 +132,7 @@ class Game {
     final current = _repetitionKey(position);
     return [
       start,
-      for (final m in moves) m.position,
+      for (final m in moves.take(ply)) m.position,
     ].where((p) => _repetitionKey(p) == current).length;
   }
 
@@ -141,9 +163,10 @@ class Game {
     return Game._(
       start,
       List.unmodifiable([
-        ...moves,
+        ...moves.take(ply),
         GameMove(move: normalized, san: san, position: next),
       ]),
+      ply + 1,
     );
   }
 }
