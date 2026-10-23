@@ -1,5 +1,6 @@
 import 'package:chesslearn/src/features/game/game.dart';
 import 'package:chesslearn/src/features/game/game_controller.dart';
+import 'package:chesslearn/src/features/hotseat/board_orientation.dart';
 import 'package:chesslearn/src/features/hotseat/hotseat_screen.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
@@ -37,9 +38,12 @@ Future<void> _tapSquare(WidgetTester tester, String name) async {
   final square = Square.fromName(name);
   final board = tester.getRect(find.byType(Chessboard));
   final cell = board.width / 8;
+  // У перевёрнутой доски a1 — в правом верхнем углу.
+  final white = _board(tester).orientation == Side.white;
+  final file = white ? square.file : 7 - square.file;
+  final row = white ? 7 - square.rank : square.rank;
   await tester.tapAt(
-    board.topLeft +
-        Offset((square.file + 0.5) * cell, (7 - square.rank + 0.5) * cell),
+    board.topLeft + Offset((file + 0.5) * cell, (row + 0.5) * cell),
   );
   await tester.pumpAndSettle();
 }
@@ -239,6 +243,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.text('Победили чёрные. Мат'), findsOneWidget);
+    });
+  });
+
+  group('переворот доски', () {
+    testWidgets('кнопка переворачивает доску, ходы работают', (tester) async {
+      final container = await _pump(tester);
+      await tester.tap(find.byTooltip('Перевернуть доску'));
+      await tester.pumpAndSettle();
+      expect(_board(tester).orientation, Side.black);
+
+      await _playUci(tester, 'e2', 'e4');
+      expect(container.read(gameProvider).moves.single.san, 'e4');
+      expect(_board(tester).orientation, Side.black);
+
+      await tester.tap(find.byTooltip('Перевернуть доску'));
+      await tester.pumpAndSettle();
+      expect(_board(tester).orientation, Side.white);
+    });
+
+    testWidgets('автоповорот — внизу сторона, которая ходит', (tester) async {
+      final container = await _pump(tester);
+      await tester.tap(find.byType(PopupMenuButton<void>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Поворачивать доску после хода'));
+      await tester.pumpAndSettle();
+      expect(container.read(autoRotateProvider), isTrue);
+      expect(_board(tester).orientation, Side.white);
+
+      await _playUci(tester, 'e2', 'e4');
+      expect(_board(tester).orientation, Side.black);
+      await _playUci(tester, 'e7', 'e5');
+      expect(_board(tester).orientation, Side.white);
     });
   });
 
