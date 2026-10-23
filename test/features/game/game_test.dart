@@ -120,6 +120,7 @@ void main() {
     expect(game.moves.last.san, 'Qh4#');
     expect(game.isCheckmate, isTrue);
     expect(game.outcome, Outcome.blackWins);
+    expect(game.result, const GameResult(Outcome.blackWins, GameEnd.checkmate));
   });
 
   test('пат', () {
@@ -127,13 +128,78 @@ void main() {
         .play(Move.parse('g6f7')!);
     expect(game.isStalemate, isTrue);
     expect(game.isCheck, isFalse);
-    expect(game.outcome, Outcome.draw);
+    expect(game.result, const GameResult(Outcome.draw, GameEnd.stalemate));
   });
 
   test('недостаток материала — ничья', () {
     final game = Game.fromFen('4k3/8/8/8/8/8/3r4/4K3 w - - 0 1')
         .play(Move.parse('e1d2')!);
-    expect(game.outcome, Outcome.draw);
+    expect(
+      game.result,
+      const GameResult(Outcome.draw, GameEnd.insufficientMaterial),
+    );
+  });
+
+  group('троекратное повторение', () {
+    const shuffle = ['g1f3', 'g8f6', 'f3g1', 'f6g8'];
+
+    test('ничья, когда позиция встретилась в третий раз', () {
+      final twice = _play(const Game(), shuffle);
+      expect(twice.result, isNull);
+
+      final almost = _play(twice, shuffle.take(3).toList());
+      expect(almost.result, isNull);
+
+      final thrice = _play(twice, shuffle);
+      expect(
+        thrice.result,
+        const GameResult(Outcome.draw, GameEnd.threefoldRepetition),
+      );
+    });
+
+    test('позиция с возможным взятием на проходе — другая', () {
+      // После 1...Kd7 2.Ke2 Ke8 3.Ke1 расстановка та же, но взять на e3
+      // уже нельзя: стартовая позиция не считается повторённой.
+      const back = ['d8d7', 'e1e2', 'd7d8', 'e2e1'];
+      final game = _play(Game.fromFen('3k4/8/8/8/3pP3/8/8/4K3 b - e3 0 1'), [
+        ...back,
+        ...back,
+      ]);
+      expect(game.fen.split(' ')[0], '3k4/8/8/8/3pP3/8/8/4K3');
+      expect(game.result, isNull);
+    });
+
+    test('позиция с правом рокировки — другая', () {
+      const back = ['e1e2', 'e8e7', 'e2e1', 'e7e8'];
+      final game = _play(Game.fromFen('r3k3/8/8/8/8/8/8/R3K3 w Qq - 0 1'), [
+        ...back,
+        ...back,
+      ]);
+      expect(game.result, isNull);
+    });
+  });
+
+  group('правило 50 ходов', () {
+    const fen = '7k/8/6K1/8/8/8/8/R7 w - - 99 80';
+
+    test('ничья после 50 ходов без взятий и ходов пешкой', () {
+      final game = Game.fromFen(fen).play(Move.parse('a1a2')!);
+      expect(game.result, const GameResult(Outcome.draw, GameEnd.fiftyMoves));
+    });
+
+    test('мат последним ходом важнее ничьей', () {
+      final game = Game.fromFen(fen).play(Move.parse('a1a8')!);
+      expect(
+        game.result,
+        const GameResult(Outcome.whiteWins, GameEnd.checkmate),
+      );
+    });
+
+    test('ход пешкой сбрасывает счётчик', () {
+      final game = Game.fromFen('7k/8/6K1/8/8/8/P7/R7 w - - 99 80')
+          .play(Move.parse('a2a3')!);
+      expect(game.result, isNull);
+    });
   });
 
   test('некорректный FEN', () {
