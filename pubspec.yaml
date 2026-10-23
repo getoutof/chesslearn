@@ -45,6 +45,8 @@ dependencies:
   drift: ^2.35.2
   # Открывает базу drift в папке приложения на iOS и Android.
   drift_flutter: ^0.3.1
+  # Системное окно «Поделиться» — отправить PGN партии.
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
