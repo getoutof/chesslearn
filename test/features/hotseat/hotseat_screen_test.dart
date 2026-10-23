@@ -5,6 +5,7 @@ import 'package:chesslearn/src/features/hotseat/hotseat_screen.dart';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -277,6 +278,35 @@ void main() {
       await _playUci(tester, 'e7', 'e5');
       expect(_board(tester).orientation, Side.white);
     });
+  });
+
+  testWidgets('«Поделиться PGN» — PGN партии в окне «Поделиться»', (
+    tester,
+  ) async {
+    final shared = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('dev.fluttercommunity.plus/share'),
+      (call) async {
+        shared.add(call.arguments);
+        return 'dev.fluttercommunity.plus/share/unavailable';
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('dev.fluttercommunity.plus/share'),
+        null,
+      ),
+    );
+    await _pump(tester);
+    await _playUci(tester, 'e2', 'e4');
+
+    await tester.tap(find.byType(PopupMenuButton<void>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Поделиться PGN'));
+    await tester.pumpAndSettle();
+
+    final args = shared.single! as Map<Object?, Object?>;
+    expect(args['text'], contains('1. e4 *'));
   });
 
   testWidgets('некорректный FEN — сообщение, партия не меняется', (
