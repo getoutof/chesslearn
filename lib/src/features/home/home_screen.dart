@@ -4,6 +4,7 @@ import '../../app.dart';
 import '../about/about_screen.dart';
 import '../hotseat/hotseat_screen.dart';
 import '../placeholder/placeholder_screen.dart';
+import '../saved_games/saved_games_screen.dart';
 
 /// Главное меню: режимы игры и служебные разделы.
 class HomeScreen extends StatelessWidget {
@@ -31,6 +32,12 @@ class HomeScreen extends StatelessWidget {
               title: HotseatScreen.title,
               subtitle: 'По очереди на одном телефоне',
               builder: (_) => const HotseatScreen(),
+            ),
+            _MenuItem(
+              icon: Icons.folder_open,
+              title: SavedGamesScreen.title,
+              subtitle: 'Продолжить партию, импорт и экспорт PGN',
+              builder: (_) => const SavedGamesScreen(),
             ),
             _MenuItem(
               icon: Icons.school,
