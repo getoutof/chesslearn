@@ -2,6 +2,7 @@ import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart' show Move, Side, kInitialFEN;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../board/board_view.dart';
 import '../game/game.dart';
@@ -57,6 +58,13 @@ class HotseatScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _share(WidgetRef ref) async {
+    final pgn = await ref.read(gameProvider.notifier).pgn();
+    await SharePlus.instance.share(
+      ShareParams(text: pgn, subject: 'Партия ChessLearn'),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final game = ref.watch(gameProvider);
@@ -88,6 +96,10 @@ class HotseatScreen extends ConsumerWidget {
                 checked: autoRotate,
                 onTap: ref.read(autoRotateProvider.notifier).toggle,
                 child: const Text('Поворачивать доску после хода'),
+              ),
+              PopupMenuItem(
+                onTap: () => _share(ref),
+                child: const Text('Поделиться PGN'),
               ),
             ],
           ),
