@@ -21,6 +21,18 @@ void main() {
     expect(container.read(gameProvider).moves.single.san, 'e4');
   });
 
+  test('undo, redo и goTo двигают текущий ход', () {
+    controller()
+      ..play(Move.parse('e2e4')!)
+      ..play(Move.parse('e7e5')!)
+      ..undo();
+    expect(container.read(gameProvider).ply, 1);
+    controller().redo();
+    expect(container.read(gameProvider).ply, 2);
+    controller().goTo(0);
+    expect(container.read(gameProvider).fen, kInitialFEN);
+  });
+
   test('start начинает новую партию', () {
     controller()
       ..play(Move.parse('e2e4')!)
