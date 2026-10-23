@@ -41,6 +41,10 @@ dependencies:
   dartchess: ^0.14.0
   package_info_plus: ^10.2.2
   url_launcher: ^6.3.3
+  # База партий на SQLite (#7). SQLite встраивается в приложение пакетом sqlite3.
+  drift: ^2.35.2
+  # Открывает базу drift в папке приложения на iOS и Android.
+  drift_flutter: ^0.3.1
 
 dev_dependencies:
   flutter_test:
