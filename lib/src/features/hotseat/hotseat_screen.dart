@@ -8,6 +8,7 @@ import '../game/game.dart';
 import '../game/game_controller.dart';
 import '../game/game_result_text.dart';
 import '../game/move_history.dart';
+import 'board_orientation.dart';
 
 /// Игра вдвоём на одном телефоне: обе стороны ходят по очереди.
 ///
@@ -60,10 +61,17 @@ class HotseatScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final game = ref.watch(gameProvider);
     final controller = ref.read(gameProvider.notifier);
+    final autoRotate = ref.watch(autoRotateProvider);
+    final flipped = ref.watch(boardFlippedProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text(title),
         actions: [
+          IconButton(
+            tooltip: 'Перевернуть доску',
+            icon: const Icon(Icons.swap_vert),
+            onPressed: ref.read(boardFlippedProvider.notifier).toggle,
+          ),
           IconButton(
             tooltip: 'Позиция из FEN',
             icon: const Icon(Icons.edit_note),
@@ -73,6 +81,15 @@ class HotseatScreen extends ConsumerWidget {
             tooltip: 'Начальная позиция',
             icon: const Icon(Icons.restart_alt),
             onPressed: () => ref.read(gameProvider.notifier).start(),
+          ),
+          PopupMenuButton<void>(
+            itemBuilder: (context) => [
+              CheckedPopupMenuItem(
+                checked: autoRotate,
+                onTap: ref.read(autoRotateProvider.notifier).toggle,
+                child: const Text('Поворачивать доску после хода'),
+              ),
+            ],
           ),
         ],
       ),
@@ -91,6 +108,11 @@ class HotseatScreen extends ConsumerWidget {
                 child: BoardView(
                   position: game.position,
                   lastMove: game.lastMove,
+                  orientation: boardOrientation(
+                    turn: game.turn,
+                    autoRotate: autoRotate,
+                    flipped: flipped,
+                  ),
                   playerSide: game.outcome == null
                       ? PlayerSide.both
                       : PlayerSide.none,
