@@ -152,8 +152,107 @@ void main() {
         await _playUci(tester, 'f6', 'g8');
       }
 
-      expect(find.text('Ничья'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Ничья'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Троекратное повторение позиции'), findsOneWidget);
+    });
+  });
+
+  group('сдача и ничья', () {
+    ButtonStyleButton button(WidgetTester tester, String label) =>
+        tester.widget<ButtonStyleButton>(
+          find.ancestor(
+            of: find.text(label),
+            matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+          ),
+        );
+
+    Future<void> tapInDialog(WidgetTester tester, String label) async {
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(label),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('сдаётся сторона, чей ход, после подтверждения', (
+      tester,
+    ) async {
+      final container = await _pump(tester);
+      await _playUci(tester, 'e2', 'e4');
+
+      await tester.tap(find.text('Сдаться'));
+      await tester.pumpAndSettle();
+      expect(find.text('Чёрные сдаются?'), findsOneWidget);
+
+      await tapInDialog(tester, 'Сдаться');
+      expect(container.read(gameProvider).outcome, Outcome.whiteWins);
+      expect(find.text('Победили белые'), findsOneWidget);
+      expect(find.text('Чёрные сдались'), findsOneWidget);
+
+      await tapInDialog(tester, 'К позиции');
+      expect(find.text('Победили белые. Чёрные сдались'), findsOneWidget);
+      expect(_board(tester).controller.interactive, isFalse);
+      expect(button(tester, 'Сдаться').enabled, isFalse);
+      expect(button(tester, 'Ничья').enabled, isFalse);
+    });
+
+    testWidgets('«Отмена» — партия продолжается', (tester) async {
+      final container = await _pump(tester);
+      await tester.tap(find.text('Сдаться'));
+      await tester.pumpAndSettle();
+      expect(find.text('Белые сдаются?'), findsOneWidget);
+
+      await tapInDialog(tester, 'Отмена');
+      expect(container.read(gameProvider).result, isNull);
+      expect(find.text('Ход белых'), findsOneWidget);
+    });
+
+    testWidgets('ничья принята — ничья по соглашению', (tester) async {
+      final container = await _pump(tester);
+      await tester.tap(find.text('Ничья'));
+      await tester.pumpAndSettle();
+      expect(find.text('Белые предлагают ничью'), findsOneWidget);
+      expect(find.text('Ответ за чёрными.'), findsOneWidget);
+
+      await tapInDialog(tester, 'Принять');
+      expect(
+        container.read(gameProvider).result,
+        const GameResult(Outcome.draw, GameEnd.agreement),
+      );
+      expect(find.text('По соглашению сторон'), findsOneWidget);
+    });
+
+    testWidgets('ничья отклонена — партия продолжается', (tester) async {
+      final container = await _pump(tester);
+      await tester.tap(find.text('Ничья'));
+      await tester.pumpAndSettle();
+
+      await tapInDialog(tester, 'Отклонить');
+      expect(container.read(gameProvider).result, isNull);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(_board(tester).controller.interactive, isTrue);
+    });
+
+    testWidgets('после мата кнопки неактивны', (tester) async {
+      final container = await _pump(tester);
+      container
+          .read(gameProvider.notifier)
+          .start(
+            Game.fromFen(
+              'rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3',
+            ),
+          );
+      await tester.pumpAndSettle();
+      expect(button(tester, 'Сдаться').enabled, isFalse);
+      expect(button(tester, 'Ничья').enabled, isFalse);
     });
   });
 
