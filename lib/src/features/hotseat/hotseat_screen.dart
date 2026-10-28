@@ -13,9 +13,9 @@ import 'board_orientation.dart';
 
 /// Игра вдвоём на одном телефоне: обе стороны ходят по очереди.
 ///
-/// Над доской — чей ход или итог партии, под доской — ходы и кнопки
-/// отмены. Когда ход на доске заканчивает партию, показывается окно
-/// результата. Партия живёт в [gameProvider], поэтому после возврата в меню
+/// Над доской — чей ход или итог партии, под доской — ходы, кнопки
+/// отмены, «Сдаться» и «Ничья». Когда партия заканчивается — ходом,
+/// сдачей или ничьей по соглашению, — показывается окно результата. Партия живёт в [gameProvider], поэтому после возврата в меню
 /// её можно продолжить.
 class HotseatScreen extends ConsumerWidget {
   const HotseatScreen({super.key});
@@ -40,7 +40,37 @@ class HotseatScreen extends ConsumerWidget {
   /// Окно — только после хода: при переходах по истории к концу партии
   /// итог виден над доской.
   Future<void> _play(BuildContext context, WidgetRef ref, Move move) async {
-    final controller = ref.read(gameProvider.notifier)..play(move);
+    ref.read(gameProvider.notifier).play(move);
+    await _showResult(context, ref);
+  }
+
+  /// Сдаётся сторона, чей ход, — после подтверждения.
+  Future<void> _resign(BuildContext context, WidgetRef ref) async {
+    final side = ref.read(gameProvider).turn;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => _ResignDialog(side),
+    );
+    if (confirmed != true || !context.mounted) return;
+    ref.read(gameProvider.notifier).resign(side);
+    await _showResult(context, ref);
+  }
+
+  /// Сторона, чей ход, предлагает ничью; решает соперник.
+  Future<void> _offerDraw(BuildContext context, WidgetRef ref) async {
+    final side = ref.read(gameProvider).turn;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => _DrawOfferDialog(side),
+    );
+    if (accepted != true || !context.mounted) return;
+    ref.read(gameProvider.notifier).agreeDraw();
+    await _showResult(context, ref);
+  }
+
+  /// Окно результата, если партия закончилась.
+  Future<void> _showResult(BuildContext context, WidgetRef ref) async {
+    final controller = ref.read(gameProvider.notifier);
     final result = ref.read(gameProvider).result;
     if (result == null) return;
     final action = await showDialog<_ResultAction>(
@@ -135,6 +165,11 @@ class HotseatScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             MoveList(game: game, onGoTo: controller.goTo),
             HistoryButtons(game: game, onGoTo: controller.goTo),
+            _EndButtons(
+              enabled: game.result == null,
+              onResign: () => _resign(context, ref),
+              onOfferDraw: () => _offerDraw(context, ref),
+            ),
           ],
         ),
       ),
@@ -183,6 +218,96 @@ class _SideMark extends StatelessWidget {
         color: side == Side.white ? Colors.white : Colors.black,
         border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
+    );
+  }
+}
+
+/// «Сдаться» и «Ничья». Неактивны, когда партия закончилась.
+class _EndButtons extends StatelessWidget {
+  const _EndButtons({
+    required this.enabled,
+    required this.onResign,
+    required this.onOfferDraw,
+  });
+
+  final bool enabled;
+  final VoidCallback onResign;
+  final VoidCallback onOfferDraw;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        TextButton.icon(
+          icon: const Icon(Icons.flag_outlined),
+          label: const Text('Сдаться'),
+          onPressed: enabled ? onResign : null,
+        ),
+        const SizedBox(width: 16),
+        TextButton.icon(
+          icon: const Icon(Icons.handshake_outlined),
+          label: const Text('Ничья'),
+          onPressed: enabled ? onOfferDraw : null,
+        ),
+      ],
+    );
+  }
+}
+
+/// «Белые» или «Чёрные».
+String _sideName(Side side) => side == Side.white ? 'Белые' : 'Чёрные';
+
+/// Подтверждение сдачи, чтобы не сдаться случайным нажатием.
+class _ResignDialog extends StatelessWidget {
+  const _ResignDialog(this.side);
+
+  final Side side;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('${_sideName(side)} сдаются?'),
+      content: Text(
+        'Партия закончится победой ${side == Side.white ? 'чёрных' : 'белых'}.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Сдаться'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Предложение ничьи: отвечает соперник. Закрыть окно — отклонить.
+class _DrawOfferDialog extends StatelessWidget {
+  const _DrawOfferDialog(this.side);
+
+  final Side side;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('${_sideName(side)} предлагают ничью'),
+      content: Text(
+        side == Side.white ? 'Ответ за чёрными.' : 'Ответ за белыми.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Отклонить'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Принять'),
+        ),
+      ],
     );
   }
 }
