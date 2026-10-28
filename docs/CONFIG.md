@@ -40,6 +40,12 @@ flutter drive -d <id> \
   --target=integration_test/app_test.dart   # flavor dev; скриншоты — в screenshots/
 ```
 
+Все тесты запускаются одним файлом `integration_test/app_test.dart`: `flutter drive` собирает и ставит
+приложение заново на каждый `--target`, а сборка занимает большую часть времени. Сценарии лежат в
+`integration_test/scenarios/` (по файлу на задачу), общие действия — в `integration_test/helpers/app.dart`.
+Каждый сценарий запускает приложение через `launchApp`, а она **стирает сохранённые партии на устройстве**,
+чтобы сценарии не зависели друг от друга. На своём телефоне с нужными партиями тесты не запускайте.
+
 В CI это делают jobs `Integration test (Android emulator)` и `Integration test (iOS simulator)`; скриншоты
 лежат в артефактах `screenshots-android` и `screenshots-ios` запуска CI.
 
