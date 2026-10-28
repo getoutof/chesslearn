@@ -2,10 +2,13 @@ import 'package:chesslearn/src/features/about/about_screen.dart';
 import 'package:chesslearn/src/features/home/home_screen.dart';
 import 'package:chesslearn/src/features/hotseat/hotseat_screen.dart';
 import 'package:chesslearn/src/features/placeholder/placeholder_screen.dart';
+import 'package:chesslearn/src/features/saved_games/saved_games_screen.dart';
 import 'package:chessground/chessground.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/test_container.dart';
 
 Future<void> _pump(WidgetTester tester) => tester.pumpWidget(
   const ProviderScope(child: MaterialApp(home: HomeScreen())),
@@ -30,6 +33,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.byType(Chessboard), findsNothing);
+  });
+
+  testWidgets('«Сохранённые партии» открывает список', (tester) async {
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: createTestContainer(),
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+
+    await _open(tester, SavedGamesScreen.title);
+
+    expect(find.byType(SavedGamesScreen), findsOneWidget);
   });
 
   testWidgets('«О программе» открывает экран с лицензиями', (tester) async {

@@ -58,6 +58,14 @@ class SavedGamesRepository {
     return _toGame(row);
   }
 
+  /// PGN партии [id] вместе с её заголовками.
+  Future<String> pgn(int id) async {
+    final row = await (_db.select(
+      _db.savedGames,
+    )..where((t) => t.id.equals(id))).getSingle();
+    return row.pgn;
+  }
+
   /// Последняя по времени изменения незаконченная партия.
   Future<({int id, Game game})?> lastUnfinished() async {
     final row =

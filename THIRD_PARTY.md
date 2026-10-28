@@ -18,6 +18,7 @@
 | sqlite3 (Dart-пакет) | Доступ к SQLite, встраивает библиотеку SQLite в приложение | MIT | https://github.com/simolus3/sqlite3.dart |
 | SQLite | Встроенная база данных | Public domain | https://sqlite.org/copyright.html |
 | path_provider | Папка приложения для файла базы (через drift_flutter) | BSD-3-Clause | https://github.com/flutter/packages |
+| share_plus | Окно «Поделиться» для PGN партии | BSD-3-Clause | https://github.com/fluttercommunity/plus_plugins |
 
 ## Данные
 
