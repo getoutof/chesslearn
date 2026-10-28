@@ -41,6 +41,12 @@ dependencies:
   dartchess: ^0.14.0
   package_info_plus: ^10.2.2
   url_launcher: ^6.3.3
+  # База партий на SQLite (#7). SQLite встраивается в приложение пакетом sqlite3.
+  drift: ^2.35.2
+  # Открывает базу drift в папке приложения на iOS и Android.
+  drift_flutter: ^0.3.1
+  # Системное окно «Поделиться» — отправить PGN партии.
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +61,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  # Генерация кода drift (*.g.dart): dart run build_runner build.
+  drift_dev: ^2.35.1
+  build_runner: ^2.16.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -26,6 +26,13 @@ jobs:
           flutter-version-file: pubspec.yaml
           cache: true
       - run: flutter pub get
+      # Сгенерированный код (*.g.dart) хранится в git; если его забыли
+      # перегенерировать после правки таблиц drift, — CI падает.
+      - name: Generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          git status --porcelain
+          test -z "$(git status --porcelain)"
       - run: dart format --output=none --set-exit-if-changed lib test tool
       - name: Comments in Russian
         env:
