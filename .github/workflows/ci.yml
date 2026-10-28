@@ -79,8 +79,8 @@ jobs:
           cache: true
       - run: flutter build ios --release --no-codesign --flavor ${{ matrix.flavor }}
 
-  # Интеграционные тесты на эмуляторах (#42). Пока не обязательны для main:
-  # сначала убедимся, что они стабильны. Скриншоты — в артефактах job'а.
+  # Интеграционные тесты на эмуляторах (#42), обязательны для main.
+  # Скриншоты — в артефактах job'а.
   android-emulator:
     name: Integration test (Android emulator)
     needs: check
