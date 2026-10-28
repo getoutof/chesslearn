@@ -9,6 +9,7 @@ import 'package:integration_test/integration_test.dart';
 import 'helpers/app.dart';
 import 'scenarios/history.dart';
 import 'scenarios/hotseat.dart';
+import 'scenarios/saved_games.dart';
 
 /// Все интеграционные тесты — одним файлом: `flutter drive` собирает и
 /// ставит приложение на каждый файл заново, а сборка — самое долгое.
@@ -38,4 +39,6 @@ void main() {
 
   hotseatScenarios();
   historyScenarios();
+  // Последним: «Поделиться» оставляет открытым системное окно.
+  savedGamesScenarios();
 }
