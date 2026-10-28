@@ -77,6 +77,19 @@ void main() {
     expect(last?.game.moves, hasLength(2));
   });
 
+  test('сдавшаяся партия — законченная, итог сохраняется', () async {
+    final id = await repository.create(
+      _play(const Game(), ['e2e4']).resign(Side.black),
+    );
+
+    expect(await repository.lastUnfinished(), isNull);
+    expect((await repository.watchAll().first).single.result, '1-0');
+    expect(
+      (await repository.load(id)).result,
+      const GameResult(Outcome.whiteWins, GameEnd.resignation),
+    );
+  });
+
   test('список — последние изменённые первыми; удаление', () async {
     final first = await repository.create(_play(const Game(), ['e2e4']));
     now = now.add(const Duration(minutes: 1));

@@ -29,6 +29,9 @@ class GameController extends Notifier<Game> {
   void redo() => _update(state.redo());
   void goTo(int ply) => _update(state.goTo(ply));
 
+  void resign(Side side) => _update(state.resign(side));
+  void agreeDraw() => _update(state.agreeDraw());
+
   /// Начинает новую партию: с начальной позиции или с [game].
   void start([Game? game]) {
     _slot = _SaveSlot();

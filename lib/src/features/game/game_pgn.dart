@@ -34,6 +34,11 @@ String gameToPgn(Game game, {PgnHeaders headers = const {}}) {
 /// Читает первую партию из PGN: только основную линию, варианты и
 /// комментарии пропускаются. Доска стоит на последнем ходу.
 ///
+/// Если `Result` — итог, а позиция партию не заканчивает, партия
+/// закончилась без мата: победа считается сдачей проигравшего, ничья —
+/// по соглашению. Так читаются и наши партии, и большинство турнирных;
+/// поражение по времени PGN без заголовка `Termination` не отличить.
+///
 /// Бросает [FormatException], если PGN не для классических шахмат,
 /// в нём некорректный FEN или нелегальный ход.
 ({Game game, PgnHeaders headers}) gameFromPgn(String pgn) {
@@ -53,6 +58,13 @@ String gameToPgn(Game game, {PgnHeaders headers = const {}}) {
       throw FormatException('Illegal move ${index + 1}: ${data.san}');
     }
     game = game.play(move);
+  }
+  if (game.result == null) {
+    game = switch (Outcome.fromPgn(parsed.headers['Result'])) {
+      null => game,
+      Outcome(winner: final winner?) => game.resign(winner.opposite),
+      Outcome() => game.agreeDraw(),
+    };
   }
   return (game: game, headers: parsed.headers);
 }

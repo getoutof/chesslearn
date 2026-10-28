@@ -52,6 +52,19 @@ void main() {
     expect(container.read(gameProvider).fen, fen);
   });
 
+  test('resign и agreeDraw заканчивают партию', () {
+    controller()
+      ..play(Move.parse('e2e4')!)
+      ..resign(Side.black);
+    expect(container.read(gameProvider).outcome, Outcome.whiteWins);
+
+    controller()
+      ..start()
+      ..play(Move.parse('e2e4')!)
+      ..agreeDraw();
+    expect(container.read(gameProvider).outcome, Outcome.draw);
+  });
+
   group('автосохранение', () {
     SavedGamesRepository repository() =>
         container.read(savedGamesRepositoryProvider);

@@ -18,5 +18,11 @@ extension GameResultText on GameResult {
     GameEnd.insufficientMaterial => 'Недостаточно материала для мата',
     GameEnd.threefoldRepetition => 'Троекратное повторение позиции',
     GameEnd.fiftyMoves => 'Правило 50 ходов',
+    GameEnd.resignation => switch (outcome.winner) {
+      Side.white => 'Чёрные сдались',
+      Side.black => 'Белые сдались',
+      null => 'Сдача',
+    },
+    GameEnd.agreement => 'По соглашению сторон',
   };
 }
