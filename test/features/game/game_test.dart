@@ -120,6 +120,7 @@ void main() {
     expect(game.moves.last.san, 'Qh4#');
     expect(game.isCheckmate, isTrue);
     expect(game.outcome, Outcome.blackWins);
+    expect(game.result, const GameResult(Outcome.blackWins, GameEnd.checkmate));
   });
 
   test('пат', () {
@@ -127,13 +128,136 @@ void main() {
         .play(Move.parse('g6f7')!);
     expect(game.isStalemate, isTrue);
     expect(game.isCheck, isFalse);
-    expect(game.outcome, Outcome.draw);
+    expect(game.result, const GameResult(Outcome.draw, GameEnd.stalemate));
   });
 
   test('недостаток материала — ничья', () {
     final game = Game.fromFen('4k3/8/8/8/8/8/3r4/4K3 w - - 0 1')
         .play(Move.parse('e1d2')!);
-    expect(game.outcome, Outcome.draw);
+    expect(
+      game.result,
+      const GameResult(Outcome.draw, GameEnd.insufficientMaterial),
+    );
+  });
+
+  group('троекратное повторение', () {
+    const shuffle = ['g1f3', 'g8f6', 'f3g1', 'f6g8'];
+
+    test('ничья, когда позиция встретилась в третий раз', () {
+      final twice = _play(const Game(), shuffle);
+      expect(twice.result, isNull);
+
+      final almost = _play(twice, shuffle.take(3).toList());
+      expect(almost.result, isNull);
+
+      final thrice = _play(twice, shuffle);
+      expect(
+        thrice.result,
+        const GameResult(Outcome.draw, GameEnd.threefoldRepetition),
+      );
+    });
+
+    test('позиция с возможным взятием на проходе — другая', () {
+      // После 1...Kd7 2.Ke2 Ke8 3.Ke1 расстановка та же, но взять на e3
+      // уже нельзя: стартовая позиция не считается повторённой.
+      const back = ['d8d7', 'e1e2', 'd7d8', 'e2e1'];
+      final game = _play(Game.fromFen('3k4/8/8/8/3pP3/8/8/4K3 b - e3 0 1'), [
+        ...back,
+        ...back,
+      ]);
+      expect(game.fen.split(' ')[0], '3k4/8/8/8/3pP3/8/8/4K3');
+      expect(game.result, isNull);
+    });
+
+    test('позиция с правом рокировки — другая', () {
+      const back = ['e1e2', 'e8e7', 'e2e1', 'e7e8'];
+      final game = _play(Game.fromFen('r3k3/8/8/8/8/8/8/R3K3 w Qq - 0 1'), [
+        ...back,
+        ...back,
+      ]);
+      expect(game.result, isNull);
+    });
+  });
+
+  group('правило 50 ходов', () {
+    const fen = '7k/8/6K1/8/8/8/8/R7 w - - 99 80';
+
+    test('ничья после 50 ходов без взятий и ходов пешкой', () {
+      final game = Game.fromFen(fen).play(Move.parse('a1a2')!);
+      expect(game.result, const GameResult(Outcome.draw, GameEnd.fiftyMoves));
+    });
+
+    test('мат последним ходом важнее ничьей', () {
+      final game = Game.fromFen(fen).play(Move.parse('a1a8')!);
+      expect(
+        game.result,
+        const GameResult(Outcome.whiteWins, GameEnd.checkmate),
+      );
+    });
+
+    test('ход пешкой сбрасывает счётчик', () {
+      final game = Game.fromFen('7k/8/6K1/8/8/8/P7/R7 w - - 99 80')
+          .play(Move.parse('a2a3')!);
+      expect(game.result, isNull);
+    });
+  });
+
+  group('история ходов', () {
+    final game = _play(const Game(), ['e2e4', 'e7e5', 'g1f3']);
+
+    test('новая партия — отменять и возвращать нечего', () {
+      expect(const Game().canUndo, isFalse);
+      expect(const Game().canRedo, isFalse);
+      expect(game.ply, 3);
+      expect(game.canUndo, isTrue);
+      expect(game.canRedo, isFalse);
+    });
+
+    test('undo возвращает позицию и последний ход, ходы сохраняются', () {
+      final back = game.undo();
+      expect(back.ply, 2);
+      expect(back.turn, Side.white);
+      expect(back.lastMove, Move.parse('e7e5'));
+      expect(back.moves, hasLength(3));
+      expect(back.canRedo, isTrue);
+    });
+
+    test('redo возвращает отменённый ход', () {
+      final again = game.undo().undo().redo();
+      expect(again.ply, 2);
+      expect(again.fen, game.undo().fen);
+    });
+
+    test('goTo — к любому ходу, 0 — стартовая позиция', () {
+      expect(game.goTo(0).fen, kInitialFEN);
+      expect(game.goTo(0).lastMove, isNull);
+      expect(game.goTo(1).lastMove, Move.parse('e2e4'));
+      expect(() => game.goTo(4), throwsRangeError);
+      expect(() => game.goTo(-1), throwsRangeError);
+      expect(const Game().undo, throwsRangeError);
+    });
+
+    test('ход из прошлой позиции отбрасывает отменённые', () {
+      final other = game.undo().play(Move.parse('b1c3')!);
+      expect([for (final m in other.moves) m.san], ['e4', 'e5', 'Nc3']);
+      expect(other.ply, 3);
+      expect(other.canRedo, isFalse);
+    });
+
+    test('после отмены мата партия продолжается', () {
+      final mate = _play(const Game(), ['f2f3', 'e7e5', 'g2g4', 'd8h4']);
+      expect(mate.result, isNotNull);
+      expect(mate.undo().result, isNull);
+      expect(mate.undo().redo().result, mate.result);
+    });
+
+    test('повторения считаются только до текущего хода', () {
+      const shuffle = ['g1f3', 'g8f6', 'f3g1', 'f6g8'];
+      final thrice = _play(const Game(), [...shuffle, ...shuffle]);
+      expect(thrice.result?.end, GameEnd.threefoldRepetition);
+      // Стартовая позиция на ходу 4 встретилась только второй раз.
+      expect(thrice.goTo(4).result, isNull);
+    });
   });
 
   test('некорректный FEN', () {
