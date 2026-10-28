@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'helpers/app.dart';
+import 'scenarios/history.dart';
 import 'scenarios/hotseat.dart';
 
 /// Все интеграционные тесты — одним файлом: `flutter drive` собирает и
@@ -36,4 +37,5 @@ void main() {
   });
 
   hotseatScenarios();
+  historyScenarios();
 }
