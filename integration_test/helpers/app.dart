@@ -56,11 +56,13 @@ Future<void> _closeApp(WidgetTester tester) async {
 Future<void> screenshot(WidgetTester tester, String name) async {
   final binding = IntegrationTestWidgetsFlutterBinding.instance;
   // На Android Flutter рисует в отдельную поверхность, которую нельзя
-  // сфотографировать: переключаем её один раз (повторный вызов — ошибка).
+  // сфотографировать: переключаем её один раз за тест (повторный вызов —
+  // ошибка), в конце теста плагин сам возвращает её обратно.
   // На iOS вызов ничего не делает.
   if (!_surfaceConverted) {
     await binding.convertFlutterSurfaceToImage();
     _surfaceConverted = true;
+    addTearDown(() => _surfaceConverted = false);
   }
   await tester.pumpAndSettle();
   await binding.takeScreenshot(name);
