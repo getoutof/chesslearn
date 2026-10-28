@@ -48,7 +48,8 @@
 
 Проверяет `dart run tool/check_comments.dart` (в CI — на каждый PR):
 
-- `lib/`, `test/`, `tool/`, `.github/`, `analysis_options.yaml` — наши целиком, проверяются полностью;
+- `lib/`, `test/`, `integration_test/`, `test_driver/`, `tool/`, `.github/`, `analysis_options.yaml` — наши
+  целиком, проверяются полностью;
 - `pubspec.yaml`, `android/app/build.gradle.kts`, `android/gradle.properties`, нативный код
   в `android/app/src/main/kotlin/` и `ios/Runner/` — созданы из шаблона Flutter, в них
   остаются его английские комментарии. Поэтому проверяются только строки, изменённые в PR
@@ -94,7 +95,8 @@
 
 ## Проверки перед ревью
 
-- `dart format lib test tool`, `flutter analyze` — без замечаний, `flutter test` — зелёный;
+- `dart format lib test integration_test test_driver tool`, `flutter analyze` — без замечаний,
+  `flutter test` — зелёный;
 - поменяли таблицы drift или другой исходник кодогенерации —
   `dart run build_runner build --delete-conflicting-outputs`, результат закоммитить;
 - `dart run tool/check_comments.dart --base origin/main` — комментарии на русском;

@@ -51,6 +51,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Тесты на эмуляторе/устройстве (папка integration_test/), входит во Flutter SDK.
+  integration_test:
+    sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
