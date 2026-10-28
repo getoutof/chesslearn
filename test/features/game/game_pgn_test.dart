@@ -65,6 +65,27 @@ void main() {
       expect([for (final m in game.moves) m.san], ['e4', 'e5', 'Nf3', 'd6']);
     });
 
+    test('сдача и ничья по соглашению — туда и обратно', () {
+      final game = _play(const Game(), ['e2e4', 'e7e5']);
+      for (final ended in [
+        game.resign(Side.white),
+        game.resign(Side.black),
+        game.agreeDraw(),
+      ]) {
+        final pgn = gameToPgn(ended);
+        expect(gameFromPgn(pgn).game.result, ended.result, reason: pgn);
+      }
+      expect(gameToPgn(game.resign(Side.white)), contains('1. e4 e5 0-1'));
+    });
+
+    test('Result не меняет итог, который следует из позиции', () {
+      // Результат в заголовке неверный: на доске мат белым.
+      final game = gameFromPgn('[Result "1-0"]\n\n1. f3 e5 2. g4 Qh4# 1-0')
+          .game;
+      expect(game.result?.end, GameEnd.checkmate);
+      expect(game.outcome, Outcome.blackWins);
+    });
+
     test('пустой PGN — новая партия', () {
       expect(gameFromPgn('').game.moves, isEmpty);
     });

@@ -16,6 +16,17 @@ void main() {
     expect(const GameResult(Outcome.draw, GameEnd.stalemate).title, 'Ничья');
   });
 
+  test('кто сдался', () {
+    expect(
+      const GameResult(Outcome.blackWins, GameEnd.resignation).reason,
+      'Белые сдались',
+    );
+    expect(
+      const GameResult(Outcome.whiteWins, GameEnd.resignation).reason,
+      'Чёрные сдались',
+    );
+  });
+
   test('у каждой причины есть текст', () {
     for (final end in GameEnd.values) {
       expect(GameResult(Outcome.draw, end).reason, isNotEmpty);

@@ -260,6 +260,64 @@ void main() {
     });
   });
 
+  group('сдача и ничья по соглашению', () {
+    final game = _play(const Game(), ['e2e4', 'e7e5']);
+
+    test('белые сдаются — победа чёрных', () {
+      final resigned = game.resign(Side.white);
+      expect(
+        resigned.result,
+        const GameResult(Outcome.blackWins, GameEnd.resignation),
+      );
+      expect(resigned.moves, hasLength(2));
+      expect(game.result, isNull);
+    });
+
+    test('чёрные сдаются — победа белых', () {
+      expect(
+        game.resign(Side.black).result,
+        const GameResult(Outcome.whiteWins, GameEnd.resignation),
+      );
+    });
+
+    test('ничья по соглашению', () {
+      expect(
+        game.agreeDraw().result,
+        const GameResult(Outcome.draw, GameEnd.agreement),
+      );
+    });
+
+    test('после конца партии ходить нельзя', () {
+      final resigned = game.resign(Side.white);
+      final move = Move.parse('g1f3')!;
+      expect(resigned.isLegal(move), isFalse);
+      expect(() => resigned.play(move), throwsA(isA<PlayException>()));
+      expect(() => game.agreeDraw().play(move), throwsA(isA<PlayException>()));
+    });
+
+    test('закончившуюся партию закончить ещё раз нельзя', () {
+      final mate = _play(const Game(), ['f2f3', 'e7e5', 'g2g4', 'd8h4']);
+      expect(() => mate.resign(Side.white), throwsStateError);
+      expect(() => game.resign(Side.white).agreeDraw(), throwsStateError);
+    });
+
+    test('на прошлых ходах партия продолжается', () {
+      final resigned = game.resign(Side.white);
+      expect(resigned.undo().result, isNull);
+      expect(resigned.undo().redo().result, resigned.result);
+
+      final other = resigned.undo().play(Move.parse('c7c5')!);
+      expect(other.result, isNull);
+      expect(other.moves.last.san, 'c5');
+    });
+
+    test('сдача на прошлом ходу отбрасывает ходы после него', () {
+      final resigned = game.undo().resign(Side.black);
+      expect([for (final m in resigned.moves) m.san], ['e4']);
+      expect(resigned.result?.end, GameEnd.resignation);
+    });
+  });
+
   test('некорректный FEN', () {
     expect(() => Game.fromFen('not a fen'), throwsA(isA<FenException>()));
     expect(

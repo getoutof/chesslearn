@@ -22,6 +22,12 @@ enum GameEnd {
   insufficientMaterial,
   threefoldRepetition,
   fiftyMoves,
+
+  /// Сторона, проигравшая партию, сдалась.
+  resignation,
+
+  /// Ничья по соглашению сторон.
+  agreement,
 }
 
 /// Итог партии: кто победил (или ничья) и почему.
@@ -44,11 +50,15 @@ class GameResult {
 }
 
 /// Партия: стартовая позиция, сделанные ходы и текущий ход [ply], на
-/// котором стоит доска. Неизменяема — [play], [undo], [redo] и [goTo]
-/// возвращают новую партию.
+/// котором стоит доска. Неизменяема — [play], [undo], [redo], [goTo],
+/// [resign] и [agreeDraw] возвращают новую партию.
 ///
 /// [undo] и [redo] только передвигают [ply], ходы при этом сохраняются.
 /// Ход из прошлой позиции отбрасывает всё, что было после неё.
+///
+/// Сдача и ничья по соглашению не следуют из позиции, поэтому партия
+/// хранит их явно. Они относятся к последнему ходу: на прошлых ходах
+/// партия продолжается, и ход оттуда их отменяет, как и остальные ходы.
 ///
 /// Все правила — из dartchess: легальность ходов, рокировка, взятие на
 /// проходе, превращение пешки, шах, мат и пат.
@@ -61,7 +71,7 @@ class Game {
   factory Game.fromFen(String fen) =>
       Game(start: Chess.fromSetup(Setup.parseFen(fen)));
 
-  const Game._(this.start, this.moves, this.ply);
+  const Game._(this.start, this.moves, this.ply, [this._ending]);
 
   final Position start;
 
@@ -70,6 +80,9 @@ class Game {
 
   /// Сколько ходов из [moves] сделано на доске: 0 — стартовая позиция.
   final int ply;
+
+  /// Сдача или ничья по соглашению после последнего хода.
+  final GameResult? _ending;
 
   Position get position => ply == 0 ? start : moves[ply - 1].position;
   String get fen => position.fen;
@@ -82,7 +95,7 @@ class Game {
   /// Переходит к позиции после хода [ply]: 0 — стартовая позиция.
   Game goTo(int ply) {
     RangeError.checkValueInInterval(ply, 0, moves.length, 'ply');
-    return Game._(start, moves, ply);
+    return Game._(start, moves, ply, _ending);
   }
 
   Game undo() => goTo(ply - 1);
@@ -98,6 +111,7 @@ class Game {
   /// повторение и правило 50 ходов по правилам FIDE — право потребовать
   /// ничью, но у нас, как в большинстве приложений, ничья наступает сама.
   GameResult? get result {
+    if (_ending case final ending? when ply == moves.length) return ending;
     final position = this.position;
     if (position.isCheckmate) {
       return GameResult(
@@ -142,7 +156,12 @@ class Game {
   /// dartchess считает легальным ход пешки на последнюю горизонталь без
   /// выбора фигуры и оставляет там пешку, поэтому такой ход отсекаем сами.
   bool isLegal(Move move) =>
-      position.isLegal(move) && !_isPromotionWithoutRole(move);
+      !_isOver && position.isLegal(move) && !_isPromotionWithoutRole(move);
+
+  /// Партия закончилась сдачей или ничьей по соглашению. После мата и пата
+  /// ходов нет и так, а после троекратного повторения и 50 ходов их не
+  /// запрещаем: в PGN турнирных партий игра иногда продолжается дальше.
+  bool get _isOver => _ending != null && ply == moves.length;
 
   bool _isPromotionWithoutRole(Move move) =>
       move is NormalMove &&
@@ -153,8 +172,9 @@ class Game {
   /// Делает ход. Рокировку можно передать и ходом короля на две клетки
   /// (e1-g1), и ходом короля на ладью (e1-h1): в партии она хранится во
   /// втором виде, как в dartchess. Бросает [PlayException], если ход
-  /// нелегален.
+  /// нелегален или партия закончилась сдачей или ничьей по соглашению.
   Game play(Move move) {
+    if (_isOver) throw PlayException('Game is over: $_ending');
     if (_isPromotionWithoutRole(move)) {
       throw PlayException('Promotion role is required: $move');
     }
@@ -168,5 +188,22 @@ class Game {
       ]),
       ply + 1,
     );
+  }
+
+  /// Сторона [side] сдаётся. Ходы после текущего отбрасываются, как при
+  /// ходе из прошлой позиции. Бросает [StateError], если партия уже
+  /// закончилась.
+  Game resign(Side side) =>
+      _end(GameResult(Outcome(winner: side.opposite), GameEnd.resignation));
+
+  /// Ничья по соглашению сторон. Как и [resign], отбрасывает ходы после
+  /// текущего и бросает [StateError], если партия уже закончилась.
+  Game agreeDraw() => _end(const GameResult(Outcome.draw, GameEnd.agreement));
+
+  Game _end(GameResult ending) {
+    if (result case final result?) {
+      throw StateError('Game is over: $result');
+    }
+    return Game._(start, List.unmodifiable(moves.take(ply)), ply, ending);
   }
 }
